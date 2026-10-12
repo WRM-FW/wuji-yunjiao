@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>吴记云饺 - 河南信息科技学院三楼</title>
+  <meta name="description" content="河南信息科技学院三楼吴记云饺在线点餐：纯手工现包现煮热食水饺、大颗福袋馄炖、生饺称斤立减优惠，全单免收打包费。" />
+  <meta name="theme-color" content="#C92A2A" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/components.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- 顶部商家品牌导航 -->
+    <header class="store-header">
+      <div class="store-header-top">
+        <div class="brand-badge">
+          <span class="pulse-dot"></span>
+          <span>营业接单中 · 10:30-20:30</span>
+        </div>
+        <div>
+          <button id="viewMenuImageBtn" class="admin-link-btn" title="查看实体店纸质大菜单">
+            📜 实体大菜单
+          </button>
+        </div>
+      </div>
+
+      <div class="store-info-row">
+        <div class="store-avatar-wrap">
+          <img src="assets/images/logo_mascot.png" alt="吴记云饺吉祥物" />
+        </div>
+        <div class="store-meta">
+          <h1 class="store-title">
+            吴记云饺
+            <span style="font-size: 11px; background: rgba(255,255,255,0.25); padding: 1px 6px; border-radius: 4px; font-weight: 500;">
+              高校档口
+            </span>
+          </h1>
+          <p class="store-slogan">皮薄肉多 正宗风味 · 纯手工零添加 · 天天新鲜</p>
+          <p class="store-location">
+            📍 河南信息科技学院三楼
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <!-- 顶部重要公告轮播 -->
+    <div class="promise-marquee">
+      <span class="speaker-icon">📢</span>
+      <div class="marquee-content">
+        <span class="marquee-text" id="marqueeText">
+          【校内师生专属福利】提前下单免排队 · 所有生饺每斤立减1元 · 堂食/自取全单免收打包费 · 不满意免费重做一份！
+        </span>
+      </div>
+    </div>
+
+    <!-- 核心承诺与品质保障标签 -->
+    <div class="store-tags-bar">
+      <span class="tag-pill red">🥟 纯手工现包</span>
+      <span class="tag-pill gold">🎁 生饺立减￥1/斤</span>
+      <span class="tag-pill green">🛍️ 全单免打包费</span>
+      <span class="tag-pill red">🛡️ 假一赔十零添加</span>
+      <span class="tag-pill gold">🔄 不满意免费重做</span>
+    </div>
+
+    <!-- 双栏纯文字点餐主区域 -->
+    <main class="menu-main-wrap">
+      <!-- 左侧分类侧边栏 -->
+      <aside class="category-sidebar" id="categorySidebar">
+        <!-- 动态生成分类 Tab -->
+      </aside>
+
+      <!-- 右侧纯文字商品列表 -->
+      <section class="product-content-wrap" id="productContentWrap">
+        <!-- 动态生成各分类纯文字商品列表 -->
+      </section>
+    </main>
+
+    <!-- 订餐群指引浮动入口 -->
+    <button id="wechatFloatBtn" class="wechat-float-btn" title="查看订餐福利群">
+      <span>💬</span>
+      <span>订餐群说明</span>
+    </button>
+
+    <!-- 底部悬浮购物车栏 -->
+    <footer class="floating-cart-bar">
+      <div style="display: flex; align-items: center;">
+        <button id="cartIconBtn" class="cart-icon-btn" aria-label="查看购物车">
+          <span>🛒</span>
+          <span id="cartBadge" class="cart-badge" style="display: none;">0</span>
+        </button>
+        <div class="cart-price-meta">
+          <div class="cart-total-price">
+            <span class="currency">￥</span><span id="cartTotalPrice">0.00</span>
+          </div>
+          <div id="cartDiscountTip" class="cart-discount-tip" style="display: none;">
+            已省 ￥0.00 (生饺立减)
+          </div>
+        </div>
+      </div>
+      <button id="goToCheckoutBtn" class="checkout-btn" disabled>
+        <span>去结算</span>
+        <span style="font-size: 16px;">➔</span>
+      </button>
+    </footer>
+
+    <!-- 规格选择器抽屉 (纯文字布局) -->
+    <div id="specModalOverlay" class="modal-overlay">
+      <div class="drawer-bottom-card">
+        <div class="drawer-header">
+          <div class="drawer-title" id="specModalTitle">选择口味与规格</div>
+          <button class="drawer-close-btn" id="specModalCloseBtn">&times;</button>
+        </div>
+        <div class="drawer-body" id="specModalBody">
+          <!-- 规格内容由 JS 动态渲染纯文字排版 -->
+        </div>
+        <div class="drawer-footer">
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted);">单价小计</div>
+            <div style="font-size: 18px; font-weight: 800; color: var(--primary);">
+              ￥<span id="specSubtotalPrice">0.00</span>
+            </div>
+          </div>
+          <button id="specConfirmAddBtn" class="btn-primary" style="width: auto; padding: 10px 24px;">
+            加入购物车
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 购物车明细抽屉 (纯文字布局) -->
+    <div id="cartDrawerOverlay" class="modal-overlay">
+      <div class="drawer-bottom-card">
+        <div class="drawer-header">
+          <div class="drawer-title">
+            <span>🛒 购物车明细</span>
+            <span id="cartItemsCountLabel" style="font-size: 12px; color: var(--text-muted); font-weight: normal;">(0件)</span>
+          </div>
+          <button id="clearCartBtn" style="background: none; border: none; color: var(--text-muted); font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            🗑️ 清空
+          </button>
+        </div>
+        <div class="drawer-body" id="cartDrawerBody" style="min-height: 120px;">
+          <!-- 动态渲染购物车条目 -->
+        </div>
+        <div class="drawer-footer">
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted);">应付总额（免打包费）</div>
+            <div style="font-size: 18px; font-weight: 800; color: var(--primary);">
+              ￥<span id="cartDrawerTotalPrice">0.00</span>
+            </div>
+          </div>
+          <button id="cartDrawerCheckoutBtn" class="btn-primary" style="width: auto; padding: 10px 24px;">
+            去结算
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 订餐群说明与二维码弹窗 -->
+    <div id="wechatModalOverlay" class="modal-overlay center">
+      <div class="modal-center-card">
+        <div style="padding: 16px; text-align: center;">
+          <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">
+            吴记云饺 · 校内订餐说明
+          </h3>
+          <p style="font-size: 12px; color: #B45309; background: #FFFBEB; padding: 8px; border-radius: 6px; margin: 8px 0 12px; line-height: 1.4;">
+            📌 付款完成后，请将<strong>【当前订单页面截图】</strong>和<strong>【支付成功截图】</strong>一并发送至订餐群，档口工作人员核验后将立刻为您安排出餐！
+          </p>
+          <div style="background: #F8F9FA; padding: 10px; border-radius: 12px; display: inline-block;">
+            <img src="assets/images/wechat_group.jpg" alt="吴记云饺订餐群二维码" style="width: 200px; height: 240px; object-fit: contain; border-radius: 8px;" />
+          </div>
+          <p style="font-size: 11px; color: #94A3B8; margin-top: 8px;">
+            微信长按识别二维码或截图后扫码进群
+          </p>
+          <button id="wechatModalCloseBtn" class="btn-secondary" style="margin-top: 12px; width: 100%;">
+            我知道了
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 实体大菜单查看弹窗 -->
+    <div id="menuModalOverlay" class="modal-overlay center">
+      <div class="modal-center-card" style="max-width: 440px;">
+        <div style="padding: 14px; text-align: center;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="font-size: 15px; font-weight: 700;">河南信息科技学院三楼 · 档口原版菜单</h3>
+            <button id="menuModalCloseBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+          </div>
+          <div style="max-height: 65vh; overflow-y: auto; border-radius: 8px;">
+            <img src="assets/images/menu_full.jpg" alt="吴记云饺现场大菜单" style="width: 100%; height: auto; display: block; border-radius: 8px;" />
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+            现场原版招牌价目表（支持双击放大查看）
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast 提示浮层 -->
+    <div id="toast" class="toast-container"></div>
+  </div>
+
+  <script src="js/mock-data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

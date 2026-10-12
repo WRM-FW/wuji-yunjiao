@@ -1,0 +1,24 @@
+# 本地设计物料，不参与站点部署
+/排版优化效果预览.png
+
+# 纯文字菜单改版后已不再被页面引用的菜品图（仅本地留存）
+/assets/images/corn_pork.jpg
+/assets/images/fresh_shrimp.jpg
+/assets/images/fudai_wonton.jpg
+/assets/images/jiucai_egg.jpg
+/assets/images/mushroom_dumpling.jpg
+/assets/images/raw_dumplings.jpg
+/assets/images/shrimp_pork.jpg
+/assets/images/shuijiao_plate.jpg
+
+# 依赖与工具产物
+node_modules/
+.wrangler/
+.wrangler-dev/
+dist/
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log

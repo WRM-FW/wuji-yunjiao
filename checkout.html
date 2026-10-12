@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>订单结算 - 吴记云饺</title>
+  <meta name="description" content="核对订单商品信息、就餐方式、出餐时间与备注，准备扫码支付。" />
+  <meta name="theme-color" content="#C92A2A" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <style>
+    .checkout-page-container {
+      padding-bottom: 90px;
+    }
+    .checkout-topbar {
+      background: #FFFFFF;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+    .back-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    .page-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .checkout-content {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .section-card {
+      background: #FFFFFF;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-light);
+    }
+    .section-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .dining-switch-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .dining-switch-btn {
+      padding: 12px 10px;
+      border-radius: 10px;
+      border: 2px solid var(--border-color);
+      background: #F8FAFC;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .dining-switch-btn.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+    }
+    .dining-switch-btn .icon {
+      font-size: 20px;
+      margin-bottom: 2px;
+    }
+    .form-group {
+      margin-bottom: 10px;
+    }
+    .form-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-size: 14px;
+      font-family: inherit;
+      background: #F8FAFC;
+      outline: none;
+      transition: border 0.15s;
+    }
+    .form-input:focus {
+      border-color: var(--primary);
+      background: #FFFFFF;
+    }
+    .time-selector-box {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .time-tabs {
+      display: flex;
+      gap: 8px;
+    }
+    .time-tab-btn {
+      flex: 1;
+      padding: 8px;
+      text-align: center;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background: #F8FAFC;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .time-tab-btn.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+    }
+    .custom-time-wrap {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .quick-chips-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+    .quick-chip {
+      font-size: 11px;
+      background: #F1F5F9;
+      color: var(--text-muted);
+      padding: 3px 8px;
+      border-radius: 12px;
+      cursor: pointer;
+      border: 1px solid var(--border-light);
+    }
+    .quick-chip:active {
+      background: #E2E8F0;
+      color: var(--primary);
+    }
+    .fee-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .fee-row.total {
+      border-top: 1px dashed var(--border-color);
+      padding-top: 10px;
+      margin-top: 6px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .fee-row.total .price {
+      font-size: 20px;
+      color: var(--primary);
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container checkout-page-container">
+    <!-- 顶部返回条 -->
+    <header class="checkout-topbar">
+      <button class="back-btn" id="backToHomeBtn">
+        <span>‹</span> 返回选购
+      </button>
+      <h1 class="page-title">确认订单与结算</h1>
+    </header>
+
+    <main class="checkout-content">
+      <!-- 1. 用餐方式选择：堂食或自取 -->
+      <section class="section-card">
+        <div class="section-card-title">
+          <span>🍴 用餐方式</span>
+          <span style="font-size: 11px; color: var(--accent-green); font-weight: 500;">✓ 全单免收打包费</span>
+        </div>
+        <div class="dining-switch-row">
+          <div class="dining-switch-btn active" id="typeDineIn" data-type="dine_in">
+            <div class="icon">🍽️</div>
+            <div>堂食就餐</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">档口现煮 · 在店食用</div>
+          </div>
+          <div class="dining-switch-btn" id="typePickup" data-type="pickup">
+            <div class="icon">🛍️</div>
+            <div>打包自取</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">下课自取 · 免排队</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. 出餐时间自由选择/输入 -->
+      <section class="section-card">
+        <div class="section-card-title">
+          <span>⏰ 预约出餐时间</span>
+          <span style="font-size: 11px; color: var(--accent-gold); font-weight: 500;">可自选任意时间</span>
+        </div>
+        <div class="time-selector-box">
+          <div class="time-tabs">
+            <div class="time-tab-btn active" id="timeAsapBtn">尽快出餐 (约10-15分钟)</div>
+            <div class="time-tab-btn" id="timeCustomBtn">指定具体时间</div>
+          </div>
+          <div id="customTimeInputContainer" style="display: none; margin-top: 4px;">
+            <div class="custom-time-wrap">
+              <input type="time" id="timePickerInput" class="form-input" style="flex: 1; font-weight: 700;" value="12:00" />
+              <input type="text" id="customTimeTextInput" class="form-input" placeholder="或直接输入(如: 12:15)" style="flex: 1;" />
+            </div>
+            <div class="quick-chips-row">
+              <span class="quick-chip time-chip" data-time="11:45">11:45</span>
+              <span class="quick-chip time-chip" data-time="12:00">12:00</span>
+              <span class="quick-chip time-chip" data-time="12:10">12:10</span>
+              <span class="quick-chip time-chip" data-time="12:20">12:20</span>
+              <span class="quick-chip time-chip" data-time="12:30">12:30</span>
+              <span class="quick-chip time-chip" data-time="17:30">17:30</span>
+              <span class="quick-chip time-chip" data-time="18:00">18:00</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 订单备注（仅保留备注输入项，已删除姓名与电话） -->
+      <section class="section-card">
+        <div class="section-card-title">
+          <span>📝 订单备注</span>
+          <span style="font-size: 11px; color: var(--text-light);">选填</span>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <input type="text" id="orderNoteInput" class="form-input" placeholder="口味、熟度或包装特殊要求" maxlength="50" />
+          <div class="quick-chips-row">
+            <span class="quick-chip note-chip" data-note="免葱免香菜">免葱免香菜</span>
+            <span class="quick-chip note-chip" data-note="多放老陈醋">多放老陈醋</span>
+            <span class="quick-chip note-chip" data-note="多加紫菜虾皮">多加紫菜虾皮</span>
+            <span class="quick-chip note-chip" data-note="生饺分盒装">生饺分盒装</span>
+            <span class="quick-chip note-chip" data-note="不要辣椒油">不要辣椒油</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. 所选商品明细 (纯文字排版) -->
+      <section class="section-card">
+        <div class="section-card-title">
+          <span>🥟 餐品明细</span>
+          <span id="itemsSummaryCount" style="font-size: 12px; color: var(--text-muted); font-weight: normal;">共 0 件</span>
+        </div>
+        <div id="checkoutItemsList" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- 纯文字商品条目 -->
+        </div>
+      </section>
+
+      <!-- 5. 费用核算 -->
+      <section class="section-card">
+        <div class="section-card-title">
+          <span>💰 费用核算</span>
+        </div>
+        <div class="fee-row">
+          <span>商品总金额</span>
+          <span>￥<span id="feeOriginalTotal">0.00</span></span>
+        </div>
+        <div class="fee-row" id="discountFeeRow" style="display: none; color: var(--accent-gold);">
+          <span>生饺每斤立减优惠</span>
+          <span>-￥<span id="feeDiscountAmount">0.00</span></span>
+        </div>
+        <div class="fee-row">
+          <span>校内专属打包费</span>
+          <span style="color: var(--accent-green); font-weight: 600;">￥0.00 (免费优惠)</span>
+        </div>
+        <div class="fee-row total">
+          <span>最终应付金额</span>
+          <span class="price">￥<span id="feeFinalTotal">0.00</span></span>
+        </div>
+      </section>
+
+      <div style="background: #FFFBEB; border: 1px solid #FEF3C7; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #92400E; line-height: 1.5;">
+        <strong>📌 下单须知：</strong>
+        <p style="margin-top: 3px;">
+          提交订单后将直接进入扫码支付页面，展示学校统一收款码。付款完成后，请按页面提示将订单截图与付款截图发送至订餐群以便核验出餐！
+        </p>
+      </div>
+    </main>
+
+    <!-- 底部提交按钮 -->
+    <footer class="floating-cart-bar">
+      <div style="flex: 1;">
+        <div style="font-size: 11px; color: var(--text-muted);">合计应付</div>
+        <div style="font-size: 18px; font-weight: 800; color: var(--primary);">
+          ￥<span id="bottomFinalPrice">0.00</span>
+        </div>
+      </div>
+      <button id="submitOrderBtn" class="btn-primary" style="width: auto; padding: 11px 26px;">
+        提交订单，前往扫码支付
+      </button>
+    </footer>
+
+    <div id="toast" class="toast-container"></div>
+  </div>
+
+  <script src="js/mock-data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/checkout.js"></script>
+</body>
+</html>

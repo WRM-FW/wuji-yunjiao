@@ -1,0 +1,7 @@
+name = "wuji-yunjiao"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = "."
+
+[vars]
+STORE_NAME = "吴记云饺"
+CAMPUS_LOCATION = "河南信息科技学院三楼"
