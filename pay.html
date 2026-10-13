@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>扫码支付与订单确认 - 吴记云饺</title>
   <meta name="description" content="吴记云饺订单核对、学校统一二维码扫码支付及截图发群凭证页面。" />
   <meta name="theme-color" content="#C92A2A" />
@@ -315,6 +315,76 @@
       line-height: 1.4;
       margin-top: 2px;
     }
+
+    /* ===== 响应式与按斤明细（本次优化新增） ===== */
+    .pay-page-container {
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    .pay-page-wrap {
+      max-width: 620px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 10px 12px calc(24px + var(--safe-bottom));
+    }
+    .pay-nav-bar {
+      padding-top: calc(6px + var(--safe-top));
+    }
+    /* 份数/重量合计行 */
+    .receipt-qty-summary {
+      background: #F8FAFC;
+      border: 1px dashed #CBD5E1;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 12px;
+      color: #334155;
+      line-height: 1.5;
+    }
+    .receipt-qty-summary strong {
+      color: var(--primary);
+    }
+    /* 小屏手机：表格四列压缩，长菜名换行不撑破 */
+    @media (max-width: 380px) {
+      .receipt-screenshot-card {
+        padding: 10px;
+      }
+      .receipt-items-table {
+        font-size: 12px;
+      }
+      .receipt-items-table th {
+        font-size: 11px;
+      }
+      .item-name-cell {
+        font-size: 13px;
+      }
+    }
+    /* 横屏矮窗口：收款码与说明左右并排，减少滚动 */
+    @media (max-height: 620px) and (orientation: landscape) and (min-width: 700px) {
+      .pay-page-wrap {
+        max-width: 900px;
+      }
+      .receipt-screenshot-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+        column-gap: 16px;
+        align-items: start;
+      }
+      .receipt-header-row,
+      .hero-info-grid,
+      .receipt-note-row,
+      .screenshot-guide-alert {
+        grid-column: 1 / -1;
+      }
+    }
+    /* 平板竖屏/大屏：凭证卡保持手机比例，避免截图发群时变形 */
+    @media (min-width: 761px) {
+      .pay-page-wrap {
+        padding: 16px 16px calc(28px + var(--safe-bottom));
+      }
+      .receipt-screenshot-card {
+        padding: 18px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -375,8 +445,11 @@
           </table>
         </div>
 
+        <!-- 份数 / 重量合计：熟食按份、生饺按斤分列，便于档口复核 -->
+        <div id="receiptQtySummary" class="receipt-qty-summary" style="display: none;"></div>
+
         <!-- 订单备注 -->
-        <div id="receiptNoteRow" style="display: none; font-size: 12px; background: #FEF3C7; padding: 6px 8px; border-radius: 4px; color: #92400E;">
+        <div id="receiptNoteRow" class="receipt-note-row" style="display: none; font-size: 12px; background: #FEF3C7; padding: 6px 8px; border-radius: 4px; color: #92400E;">
           <strong>订单备注：</strong><span id="receiptNoteVal">--</span>
         </div>
 

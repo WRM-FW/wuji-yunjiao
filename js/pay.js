@@ -8,6 +8,7 @@
   const heroDiningBadge = document.getElementById("heroDiningBadge");
   const heroTimeVal = document.getElementById("heroTimeVal");
   const receiptItemsTbody = document.getElementById("receiptItemsTbody");
+  const receiptQtySummary = document.getElementById("receiptQtySummary");
 
   const receiptNoteRow = document.getElementById("receiptNoteRow");
   const receiptNoteVal = document.getElementById("receiptNoteVal");
@@ -62,9 +63,14 @@
     // 核心信息 2: 具体出餐时间
     heroTimeVal.textContent = order.pickupTime || "尽快出餐";
 
-    // 核心信息 3 & 4: 商品名称与数量列表（纯文字高对比度排版）
+    // 核心信息 3 & 4: 商品名称与数量列表（熟食按份 / 生饺按斤，单位一律写清）
+    const fmtJin = WujiStore.formatJin;
     let rowsHtml = "";
     order.items.forEach((item) => {
+      const unit = item.unit || (item.isRaw ? "斤" : "份");
+      const qtyLabel = item.qtyLabel || (item.isRaw ? `${fmtJin(item.quantity)} 斤` : `x${item.quantity}`);
+      const priceLabel = item.priceLabel || `￥${Number(item.price).toFixed(1)}/${unit}`;
+
       rowsHtml += `
         <tr>
           <td>
@@ -73,10 +79,10 @@
             ${item.options ? `<div class="item-opts-text">${item.options}</div>` : ""}
           </td>
           <td class="item-qty-cell">
-            x${item.quantity}
+            ${qtyLabel}
           </td>
           <td class="item-price-cell">
-            ￥${item.price.toFixed(1)}
+            ${priceLabel}
           </td>
           <td class="item-subtotal-cell">
             ￥${item.subtotal.toFixed(2)}
@@ -85,6 +91,19 @@
       `;
     });
     receiptItemsTbody.innerHTML = rowsHtml;
+
+    // 份数与重量分列合计，方便档口按秤复核
+    const portionCount = order.portionCount ?? order.items.filter((i) => !i.isRaw).reduce((s, i) => s + i.quantity, 0);
+    const rawWeightJin = order.rawWeightJin ?? order.items.filter((i) => i.isRaw).reduce((s, i) => s + Number(i.quantity), 0);
+    const summaryParts = [];
+    if (portionCount > 0) summaryParts.push(`熟食现煮 <strong>${portionCount} 份</strong>`);
+    if (rawWeightJin > 0) summaryParts.push(`生饺称重 <strong>${fmtJin(rawWeightJin)} 斤</strong>（现场以电子秤复核）`);
+    if (summaryParts.length > 0) {
+      receiptQtySummary.innerHTML = `合计：${summaryParts.join(" ＋ ")}`;
+      receiptQtySummary.style.display = "block";
+    } else {
+      receiptQtySummary.style.display = "none";
+    }
 
     // 订单备注
     if (order.note && order.note.trim()) {

@@ -43,8 +43,13 @@
   function renderOrderItems(cart) {
     try {
       trustedCalculation = WujiStore.calculateTrustedOrder(cart);
+      const fmtJin = WujiStore.formatJin;
 
-      itemsSummaryCount.textContent = `共 ${trustedCalculation.itemsCount} 件`;
+      const summaryParts = [`共 ${trustedCalculation.itemsCount} 件`];
+      if (trustedCalculation.portionCount > 0) summaryParts.push(`熟食 ${trustedCalculation.portionCount} 份`);
+      if (trustedCalculation.rawWeightJin > 0) summaryParts.push(`生饺 ${fmtJin(trustedCalculation.rawWeightJin)} 斤`);
+      itemsSummaryCount.textContent = summaryParts.join(" · ");
+
       feeOriginalTotal.textContent = trustedCalculation.originalTotal.toFixed(2);
       feeFinalTotal.textContent = trustedCalculation.finalTotal.toFixed(2);
       bottomFinalPrice.textContent = trustedCalculation.finalTotal.toFixed(2);
@@ -59,20 +64,17 @@
       let html = "";
       trustedCalculation.verifiedItems.forEach((item) => {
         html += `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-light);">
-            <div style="flex: 1; min-width: 0; padding-right: 8px;">
-              <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">${item.name}</div>
-              <div style="font-size: 11px; color: var(--text-muted); margin-top: 1px;">
+          <div class="checkout-item-row">
+            <div class="checkout-item-main">
+              <div class="checkout-item-name">${item.name}</div>
+              <div class="checkout-item-spec">
                 <span style="color: var(--primary); font-weight: 600;">[${item.specName}]</span>
+                <span class="unit-tag">￥${item.price.toFixed(1)}/${item.unit}</span>
                 ${item.options ? ` · ${item.options}` : ""}
               </div>
             </div>
-            <div style="font-size: 13px; color: var(--text-muted); padding: 0 8px; font-weight: 600;">
-              x${item.quantity}
-            </div>
-            <div style="font-size: 14px; font-weight: 800; color: var(--text-main); text-align: right; min-width: 55px;">
-              ￥${item.subtotal.toFixed(2)}
-            </div>
+            <div class="checkout-item-qty">${item.qtyLabel}</div>
+            <div class="checkout-item-subtotal">￥${item.subtotal.toFixed(2)}</div>
           </div>
         `;
       });

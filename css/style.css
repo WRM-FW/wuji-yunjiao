@@ -29,6 +29,12 @@
   --shadow-primary: 0 4px 14px rgba(201, 42, 42, 0.3);
   --font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
   --safe-bottom: env(safe-area-inset-bottom, 16px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --app-max: 1024px;          /* 应用外壳最大宽度（平板/大屏放宽） */
+  --cart-h: 66px;             /* 底部结算栏高度，用于浮动入口定位 */
+  --sidebar-w: 82px;          /* 左侧分类栏宽度，窄屏下调 */
 }
 
 * {
@@ -38,37 +44,69 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html {
+  height: 100%;
+  /* 禁止下拉刷新/橡皮筋把整个页面拽走，滚动只发生在列表内部 */
+  overscroll-behavior: none;
+}
+
 body {
   font-family: var(--font-family);
-  background-color: #212529;
+  /* 浅色底：大屏时两侧不再是黑边，而是与页面同色系的留白 */
+  background-color: var(--bg-page);
+  background-image: radial-gradient(1200px 600px at 50% -10%, #FFF1E7 0%, rgba(255, 241, 231, 0) 60%);
   color: var(--text-main);
   line-height: 1.5;
   font-size: 14px;
   overflow-x: hidden;
-  min-height: 100vh;
+  min-height: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* 首页应用外壳：整页不滚，只有分类栏与商品列表各自滚 */
+body.app-shell-body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .app-container {
-  max-width: 480px;
+  max-width: var(--app-max);
   margin: 0 auto;
   min-height: 100vh;
   background-color: var(--bg-page);
   position: relative;
-  box-shadow: 0 0 35px rgba(0,0,0,0.25);
   display: flex;
   flex-direction: column;
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+.app-container.app-shell {
+  height: 100vh;   /* 不支持 dvh 的老内核回退 */
+  height: 100dvh;  /* 手机地址栏收放时高度会跟着变，不会留白或被裁 */
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (min-width: 761px) {
+  .app-container {
+    box-shadow: 0 0 40px rgba(120, 72, 40, 0.10);
+  }
 }
 
 /* 顶部品牌导航栏 */
 .store-header {
   background: linear-gradient(135deg, #A61E1E 0%, #C92A2A 60%, #D94848 100%);
   color: #FFFFFF;
-  padding: 16px 16px 14px;
+  padding: calc(16px + var(--safe-top)) 16px 14px;
   position: relative;
   border-bottom-left-radius: var(--radius-lg);
   border-bottom-right-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   z-index: 10;
+  flex-shrink: 0;
 }
 
 .store-header-top {
@@ -194,6 +232,7 @@ body {
   gap: 6px;
   font-size: 12px;
   color: #B45309;
+  flex-shrink: 0;
 }
 
 .promise-marquee .speaker-icon {
@@ -209,7 +248,8 @@ body {
 
 .promise-marquee .marquee-text {
   display: inline-block;
-  animation: marquee-roll 22s linear infinite;
+  /* 负延迟：首屏就能看到字，而不是等一整轮才从右边滚进来 */
+  animation: marquee-roll 22s linear -7s infinite;
 }
 
 @keyframes marquee-roll {
@@ -224,6 +264,7 @@ body {
   padding: 8px 12px;
   background: #FFFFFF;
   border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
 .tag-pill {
@@ -257,23 +298,30 @@ body {
 /* 双栏点餐主区域 */
 .menu-main-wrap {
   display: flex;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;          /* 关键：不加这行 flex 子项会被内容撑高，整页跟着滚 */
   overflow: hidden;
   position: relative;
 }
 
-/* 左侧分类导航条 */
+/* 左侧分类导航条（独立滚动） */
 .category-sidebar {
-  width: 82px;
+  width: var(--sidebar-w);
   background-color: #F1F5F9;
   border-right: 1px solid var(--border-color);
   overflow-y: auto;
+  overscroll-behavior: contain;   /* 滚到边界不把滚动传给页面 */
   -webkit-overflow-scrolling: touch;
   flex-shrink: 0;
-  padding-bottom: 90px;
+  align-self: stretch;
+  scrollbar-width: thin;
 }
 
 .category-tab {
+  width: 100%;
+  background: transparent;
+  border: none;
+  font-family: inherit;
   padding: 14px 4px;
   text-align: center;
   font-size: 12px;
@@ -310,13 +358,26 @@ body {
   font-size: 16px;
 }
 
-/* 右侧纯文字商品列表流 */
+/* 右侧纯文字商品列表流（独立滚动） */
 .product-content-wrap {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   background-color: #FFFFFF;
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: 8px 12px 90px;
+  padding: 8px 12px calc(16px + var(--safe-bottom));
+  scrollbar-width: thin;
+}
+
+/* 商品卡片容器：手机单列，平板/大屏双列铺满可用宽度 */
+.product-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.product-grid > * {
+  min-width: 0;   /* grid/flex 子项默认 min-width:auto，长菜名会把列撑破 */
 }
 
 .category-section-title {
@@ -390,6 +451,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   margin-top: 4px;
   padding-top: 2px;
 }
@@ -398,6 +460,8 @@ body {
   display: flex;
   align-items: baseline;
   gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .price-currency {
@@ -433,7 +497,7 @@ body {
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
-  min-width: 70px;
+  min-width: 74px;
 }
 
 /* 统一规范的「选规格」按钮：固定尺寸、单行居中、防止压缩折行 */
@@ -443,11 +507,11 @@ body {
   border: none;
   font-size: 12px;
   font-weight: 700;
-  width: 70px;
-  height: 28px;
-  line-height: 28px;
+  width: 74px;
+  height: 34px;
+  line-height: 34px;
   padding: 0;
-  border-radius: 14px;
+  border-radius: 17px;
   cursor: pointer;
   white-space: nowrap;
   text-align: center;
@@ -469,11 +533,11 @@ body {
   background: #CBD5E1;
   color: #475569;
   font-size: 11px;
-  width: 70px;
-  height: 28px;
-  line-height: 28px;
+  width: 74px;
+  height: 34px;
+  line-height: 34px;
   text-align: center;
-  border-radius: 14px;
+  border-radius: 17px;
   font-weight: 600;
   display: inline-block;
   white-space: nowrap;
@@ -487,15 +551,27 @@ body {
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  max-width: 480px;
+  max-width: var(--app-max);
   background: #FFFFFF;
   border-top: 1px solid var(--border-color);
   padding: 8px 14px calc(8px + var(--safe-bottom));
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
   z-index: 50;
+}
+
+/* 首页外壳里它本来就在最下方，改为常规流：不再遮挡列表末尾，也不需要 90px 占位内边距 */
+.app-shell > .floating-cart-bar {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  width: auto;
+  max-width: none;
+  flex-shrink: 0;
 }
 
 .cart-icon-btn {
@@ -539,6 +615,7 @@ body {
 
 .cart-price-meta {
   flex: 1;
+  min-width: 0;
   margin-left: 10px;
 }
 
@@ -558,6 +635,15 @@ body {
   font-size: 11px;
   color: var(--accent-gold);
   font-weight: 500;
+}
+
+.cart-weight-tip {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .checkout-btn {
@@ -587,27 +673,443 @@ body {
   transform: scale(0.96);
 }
 
-.wechat-float-btn {
-  position: fixed;
-  bottom: 80px;
-  right: calc(50% - 220px);
-  background: #07C160;
-  color: #FFFFFF;
-  border: none;
-  border-radius: 20px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 600;
+/* 顶栏右侧入口组：订餐群 / 实体大菜单（原先悬浮在列表右下角，会压住商品卡按钮） */
+.header-actions {
   display: flex;
   align-items: center;
-  gap: 5px;
-  box-shadow: 0 4px 12px rgba(7, 193, 96, 0.35);
-  cursor: pointer;
-  z-index: 40;
+  gap: 6px;
+  min-width: 0;
 }
 
-@media (max-width: 480px) {
-  .wechat-float-btn {
-    right: 12px;
+.wechat-entry {
+  background: rgba(7, 193, 96, 0.85);
+}
+
+.wechat-entry:hover {
+  background: #07C160;
+}
+
+/* 外壳里购物车栏已在流内，图标按钮不必再探出边界 */
+.app-shell .cart-icon-btn {
+  margin-top: 0;
+  width: 42px;
+  height: 42px;
+}
+
+/* ==========================================================================
+   触控细节 / 滚动条 / 重量输入
+   ========================================================================== */
+
+button,
+.category-tab,
+.spec-pill-option,
+.quick-chip,
+.dining-switch-btn,
+.time-tab-btn {
+  touch-action: manipulation; /* 去掉移动端 300ms 点击延迟与双击缩放抢手势 */
+}
+
+button:focus-visible,
+.category-tab:focus-visible,
+.spec-pill-option:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.category-sidebar::-webkit-scrollbar,
+.product-content-wrap::-webkit-scrollbar {
+  width: 3px;
+}
+
+.category-sidebar::-webkit-scrollbar-thumb,
+.product-content-wrap::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.3);
+  border-radius: 2px;
+}
+
+/* 生饺按斤选购：数字输入 + 快捷档 + 计价公示 */
+.weight-field {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.weight-input-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.weight-input {
+  width: 108px;
+  padding: 8px 34px 8px 12px;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--primary);
+  text-align: center;
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  background: #FFFFFF;
+  font-family: inherit;
+  outline: none;
+}
+
+.weight-input:focus {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* 隐藏 number 类型的原生小箭头，改用手写 ± 按钮 */
+.weight-input::-webkit-outer-spin-button,
+.weight-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.weight-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.weight-suffix {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.weight-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.weight-hint {
+  font-size: 11px;
+  color: var(--text-light);
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
+.weight-formula {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.weight-formula strong {
+  color: var(--primary);
+  font-size: 14px;
+}
+
+.weight-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.weight-chip {
+  min-width: 56px;
+  text-align: center;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: #F8FAFC;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.weight-chip.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* 数量/重量单位小标 */
+.unit-tag {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   小屏手机（≤400px CSS 宽，如老款 iPhone SE / 小屏安卓）
+   ========================================================================== */
+
+@media (max-width: 400px) {
+  :root {
+    --sidebar-w: 70px;
+  }
+
+  .store-header {
+    padding: calc(12px + var(--safe-top)) 12px 12px;
+  }
+
+  /* 顶栏右侧两个入口在小屏上允许换行，不挤压左侧营业状态 */
+  .store-header-top {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .admin-link-btn {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  .store-avatar-wrap {
+    width: 46px;
+    height: 46px;
+  }
+
+  .store-title {
+    font-size: 17px;
+  }
+
+  .product-content-wrap {
+    padding: 6px 10px calc(14px + var(--safe-bottom));
+  }
+
+  .product-text-name {
+    font-size: 14px;
+  }
+
+  .price-amount {
+    font-size: 16px;
+  }
+
+  .floating-cart-bar {
+    padding: 8px 12px calc(8px + var(--safe-bottom));
+  }
+
+  .checkout-btn {
+    padding: 9px 14px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 340px) {
+  :root {
+    --sidebar-w: 64px;
+  }
+
+  .spec-btn {
+    width: 62px;
+  }
+
+  .btn-wrap {
+    min-width: 62px;
+  }
+
+  .tag-pill {
+    font-size: 10px;
+  }
+}
+
+/* ==========================================================================
+   平板 / 大屏：商品双列网格，容器放宽到 1024px
+   ========================================================================== */
+
+@media (min-width: 761px) {
+  :root {
+    --sidebar-w: 104px;
+  }
+
+  .store-header {
+    padding: calc(18px + var(--safe-top)) 20px 16px;
+  }
+
+  .store-title {
+    font-size: 22px;
+  }
+
+  .category-tab {
+    font-size: 13px;
+    padding: 16px 6px;
+  }
+
+  .product-content-wrap {
+    padding: 12px 20px calc(20px + var(--safe-bottom));
+  }
+
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    align-content: start;
+  }
+
+  .product-text-card {
+    border: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+    background: #FFFFFF;
+    border-radius: var(--radius-md);
+    padding: 14px;
+    box-shadow: var(--shadow-sm);
+    height: 100%;
+  }
+
+  .product-text-desc {
+    /* 双列下卡片等高，描述最多两行，避免某张卡把整行拉得很高 */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .drawer-bottom-card {
+    max-width: 760px;
+  }
+
+  .modal-overlay.center {
+    padding: 24px;
+  }
+
+  .modal-center-card {
+    max-width: 460px;
+  }
+}
+
+@media (hover: hover) {
+  .product-text-card:hover {
+    background: #FAFAFA;
+  }
+}
+
+/* ==========================================================================
+   横屏手机 / 矮窗口：把竖向空间尽量让给商品列表
+   ========================================================================== */
+
+@media (max-height: 560px) and (orientation: landscape) {
+  :root {
+    --cart-h: 56px;
+    --sidebar-w: 76px;
+  }
+
+  .store-header {
+    padding: calc(8px + var(--safe-top)) 12px 8px;
+    border-bottom-left-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
+  }
+
+  .store-header-top {
+    margin-bottom: 6px;
+  }
+
+  .store-info-row {
+    gap: 8px;
+  }
+
+  .store-avatar-wrap {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+  }
+
+  .store-title {
+    font-size: 15px;
+  }
+
+  .store-slogan {
+    display: none;
+  }
+
+  .store-location {
+    font-size: 11px;
+  }
+
+  .promise-marquee {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+
+  .store-tags-bar {
+    display: none;
+  }
+
+  .category-tab {
+    padding: 8px 4px;
+    font-size: 11px;
+    gap: 2px;
+  }
+
+  .category-tab .tab-icon {
+    font-size: 13px;
+  }
+
+  .product-content-wrap {
+    padding: 6px 10px calc(10px + var(--safe-bottom));
+  }
+
+  .product-text-card {
+    padding: 8px 8px;
+    gap: 3px;
+  }
+
+  .product-text-desc {
+    display: none;
+  }
+
+  .product-text-tags {
+    margin: 0;
+  }
+
+  .floating-cart-bar {
+    padding: 6px 12px calc(6px + var(--safe-bottom));
+  }
+
+  .app-shell .cart-icon-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 17px;
+  }
+}
+
+/* 横屏且够宽时（如 900x420 的大横屏手机/小平板）双列照样生效 */
+@media (max-height: 620px) and (orientation: landscape) and (min-width: 761px) {
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .product-text-card {
+    padding: 10px;
+  }
+
+  .product-text-desc {
+    display: block;
+    -webkit-line-clamp: 1;
+  }
+}
+
+/* ==========================================================================
+   无障碍偏好
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-text,
+  .pulse-dot {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .promise-marquee .marquee-content {
+    white-space: normal;
+  }
+
+  * {
+    transition-duration: 0.01ms !important;
   }
 }

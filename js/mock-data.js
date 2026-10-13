@@ -31,6 +31,18 @@
     { id: "jiaozi_raw", name: "生饺称斤", icon: "🧺", desc: "每斤立减1元，外带优选" }
   ];
 
+  // 生饺称重销售规则：按斤计价，顾客可自由输入重量（0.1 斤一档）
+  const RAW_SELL_CONFIG = {
+    unit: "斤",
+    stepJin: 0.1,      // 输入精度与加减步进
+    coarseStepJin: 0.5, // 购物车里快速加减用 0.5 斤
+    minJin: 0.5,       // 最低 0.5 斤起卖
+    maxJin: 20,        // 单笔上限，超出请分单或联系档口
+    quickJin: [1, 1.5, 2, 3],
+    discountPerJin: 1, // 每斤立减 1 元（priceRaw = priceCooked - 1）
+    note: "生饺按斤称重计价，0.1 斤为一档；档口现场以电子秤复核，多退少补"
+  };
+
   // 商品数据：仅保留10款水饺与5款福袋馄饨，删除小料与饮品，删除配赠蘸料选项
   const INITIAL_PRODUCTS = [
     // 饺子类 - 10款经典口味
@@ -311,8 +323,9 @@
   global.INITIAL_STORE_INFO = INITIAL_STORE_INFO;
   global.INITIAL_CATEGORIES = INITIAL_CATEGORIES;
   global.INITIAL_PRODUCTS = INITIAL_PRODUCTS;
+  global.RAW_SELL_CONFIG = RAW_SELL_CONFIG;
 
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { INITIAL_STORE_INFO, INITIAL_CATEGORIES, INITIAL_PRODUCTS };
+    module.exports = { INITIAL_STORE_INFO, INITIAL_CATEGORIES, INITIAL_PRODUCTS, RAW_SELL_CONFIG };
   }
 })(typeof window !== "undefined" ? window : globalThis);
