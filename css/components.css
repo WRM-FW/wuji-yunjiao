@@ -51,6 +51,7 @@
   width: 100%;
   max-width: 480px;
   max-height: 82vh;
+  max-height: 82dvh;   /* 手机地址栏收放后抽屉不会超出可视区 */
   display: flex;
   flex-direction: column;
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.15);
@@ -61,6 +62,68 @@
 
 .modal-overlay.active .drawer-bottom-card {
   transform: translateY(0);
+}
+
+/* 横屏手机 / 矮窗口：抽屉几乎占满高度，并把商品简介压缩，
+   保证「重量输入」这类关键控件不用先滚动就能看到 */
+@media (max-height: 620px) and (orientation: landscape) {
+  .drawer-bottom-card {
+    max-height: 94vh;
+    max-height: 94dvh;
+  }
+  .drawer-header {
+    padding: 6px 14px;
+  }
+  .drawer-body {
+    padding: 6px 14px;
+  }
+  .drawer-footer {
+    padding: 8px 14px calc(8px + var(--safe-bottom));
+  }
+  .spec-header-text-block {
+    padding: 0 0 4px;
+    margin-bottom: 6px;
+  }
+  .spec-group-title {
+    margin-bottom: 6px;
+  }
+  .spec-pills-row {
+    gap: 6px;
+  }
+  .weight-input {
+    padding: 4px 34px;
+    font-size: 15px;
+  }
+  .weight-field .stepper-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+  }
+  .spec-header-text-block .spec-text-desc {
+    display: none;
+  }
+  .spec-text-title {
+    font-size: 15px;
+  }
+  .spec-text-price-line {
+    font-size: 15px;
+    margin-top: 2px;
+  }
+  .spec-group {
+    margin-bottom: 8px;
+  }
+  .spec-pill-option {
+    min-height: 34px;
+    padding: 6px 12px;
+  }
+  .spec-group-qty,
+  .spec-group-weight {
+    margin-top: 4px;
+  }
+  /* 说明文字与「已含每斤立减」角标重复，矮屏优先保输入框可见 */
+  .weight-hint {
+    display: none;
+  }
 }
 
 .drawer-header {
@@ -94,8 +157,10 @@
 .drawer-body {
   padding: 14px 16px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;   /* 抽屉内容超高时只有正文滚，头部/底部结算条固定 */
 }
 
 .drawer-footer {
@@ -147,6 +212,20 @@
   margin-bottom: 14px;
 }
 
+/* 数量/重量组：紧跟食用方式，是决定金额的关键控件 */
+.spec-group-qty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-top: 16px;
+}
+
+.spec-group-weight {
+  margin-top: 16px;
+}
+
 .spec-group-title {
   font-size: 12px;
   font-weight: 700;
@@ -164,7 +243,10 @@
 }
 
 .spec-pill-option {
-  padding: 6px 14px;
+  padding: 9px 14px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
   border-radius: 8px;
   font-size: 13px;
   background: #F1F5F9;
@@ -199,13 +281,13 @@
 }
 
 .stepper-btn {
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   border: none;
   background: #FFFFFF;
   color: var(--text-main);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -213,6 +295,8 @@
   justify-content: center;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   transition: all 0.1s;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .stepper-btn:active {
@@ -239,12 +323,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border-light);
 }
 
 .cart-item-info {
-  flex: 1;
+  flex: 1 1 130px;
   min-width: 0;
   padding-right: 10px;
 }

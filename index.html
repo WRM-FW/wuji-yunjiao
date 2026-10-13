@@ -2,15 +2,15 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>吴记云饺 - 河南信息科技学院三楼</title>
   <meta name="description" content="河南信息科技学院三楼吴记云饺在线点餐：纯手工现包现煮热食水饺、大颗福袋馄炖、生饺称斤立减优惠，全单免收打包费。" />
   <meta name="theme-color" content="#C92A2A" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/components.css" />
 </head>
-<body>
-  <div class="app-container">
+<body class="app-shell-body">
+  <div class="app-container app-shell">
     <!-- 顶部商家品牌导航 -->
     <header class="store-header">
       <div class="store-header-top">
@@ -18,7 +18,10 @@
           <span class="pulse-dot"></span>
           <span>营业接单中 · 10:30-20:30</span>
         </div>
-        <div>
+        <div class="header-actions">
+          <button id="wechatFloatBtn" class="admin-link-btn wechat-entry" title="查看订餐福利群">
+            💬 订餐群
+          </button>
           <button id="viewMenuImageBtn" class="admin-link-btn" title="查看实体店纸质大菜单">
             📜 实体大菜单
           </button>
@@ -76,12 +79,6 @@
       </section>
     </main>
 
-    <!-- 订餐群指引浮动入口 -->
-    <button id="wechatFloatBtn" class="wechat-float-btn" title="查看订餐福利群">
-      <span>💬</span>
-      <span>订餐群说明</span>
-    </button>
-
     <!-- 底部悬浮购物车栏 -->
     <footer class="floating-cart-bar">
       <div style="display: flex; align-items: center;">
@@ -96,6 +93,7 @@
           <div id="cartDiscountTip" class="cart-discount-tip" style="display: none;">
             已省 ￥0.00 (生饺立减)
           </div>
+          <div id="cartWeightTip" class="cart-weight-tip" style="display: none;"></div>
         </div>
       </div>
       <button id="goToCheckoutBtn" class="checkout-btn" disabled>
