@@ -17,6 +17,7 @@
   const logoutBtn = document.getElementById("logoutBtn");
 
   let mode = "register";
+  const MODE_KEY = "wuji_auth_mode";
 
   const params = new URLSearchParams(location.search);
   const returnTo = sanitizeReturn(params.get("next") || "index.html");
@@ -27,13 +28,22 @@
     return target;
   }
 
-  function setMode(next) {
+  function setMode(next, remember = true) {
     mode = next;
+    if (remember) {
+      try { localStorage.setItem(MODE_KEY, next); } catch (e) { /* 隐私模式忽略 */ }
+    }
     tabRegister.classList.toggle("active", next === "register");
     tabLogin.classList.toggle("active", next === "login");
     nicknameField.style.display = next === "register" ? "block" : "none";
     submitAuthBtn.textContent = next === "register" ? "注册并开始点餐" : "登录";
     passwordInput.setAttribute("autocomplete", next === "register" ? "new-password" : "current-password");
+    const hint = document.getElementById("modeHint");
+    if (hint) {
+      hint.textContent = next === "register"
+        ? "已有账号？点上方「已有账号登录」"
+        : "第一次来？点上方「新用户注册」填个昵称";
+    }
     hideError();
   }
 
@@ -73,6 +83,11 @@
     return msg || "操作失败，请重试";
   }
 
+  async function doLogin(identifier, password) {
+    await WujiApi.login({ identifier, password });
+    location.href = returnTo;
+  }
+
   async function submit() {
     hideError();
     const identifier = identifierInput.value.trim();
@@ -85,7 +100,24 @@
     }
     if (!identifier) { showError("请填写手机号或邮箱"); return; }
     if (password.length < 6) { showError("密码至少 6 位"); return; }
-    if (mode === "register" && !nickname) { showError("请填写昵称，出餐时商家会叫这个名字"); return; }
+
+    // 注册标签下没填昵称，几乎只有一种可能：这是回来登录的老用户。
+    // 直接按登录试一次，别再用"请填写昵称"把人挡在门外。
+    if (mode === "register" && !nickname) {
+      submitAuthBtn.disabled = true;
+      submitAuthBtn.textContent = "正在登录...";
+      try {
+        await doLogin(identifier, password);
+        return;
+      } catch (e) {
+        setMode("register", false);
+        showError("这个账号还没注册过，或者密码不对。新用户请在昵称一栏填个称呼后注册；已有账号请点上方「已有账号登录」。");
+      } finally {
+        submitAuthBtn.disabled = false;
+        submitAuthBtn.textContent = "注册并开始点餐";
+      }
+      return;
+    }
 
     submitAuthBtn.disabled = true;
     submitAuthBtn.textContent = mode === "register" ? "正在注册..." : "正在登录...";
@@ -97,14 +129,34 @@
       }
       location.href = returnTo;
     } catch (e) {
-      showError(friendlyError(e));
+      const msg = String(e?.message || e);
+      if (mode === "register" && /already registered|already exists/i.test(msg)) {
+        // 注册撞上已存在账号：就地切成登录并直接重试，用户不用再操作一遍
+        setMode("login");
+        try {
+          await doLogin(identifier, password);
+          return;
+        } catch (e2) {
+          showError("这个手机号/邮箱已经注册过了，但密码对不上，请回想一下或联系档口。");
+        }
+      } else {
+        showError(friendlyError(e));
+      }
+    } finally {
       submitAuthBtn.disabled = false;
       submitAuthBtn.textContent = mode === "register" ? "注册并开始点餐" : "登录";
     }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    setMode(params.get("mode") === "login" ? "login" : "register");
+    // 默认标签：URL 指定 > 上次用过的 > 注册
+    let initial = params.get("mode");
+    if (initial !== "login" && initial !== "register") {
+      let remembered = "";
+      try { remembered = localStorage.getItem(MODE_KEY) || ""; } catch (e) { /* 忽略 */ }
+      initial = remembered === "login" ? "login" : "register";
+    }
+    setMode(initial, false);
     refreshLoginState();
 
     tabRegister.addEventListener("click", () => setMode("register"));
