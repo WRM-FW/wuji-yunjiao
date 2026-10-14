@@ -48,10 +48,26 @@
   const RAW_CFG = WujiStore.RAW_CONFIG;
   const fmtJin = WujiStore.formatJin;
 
+  let currentUser = null;
+  const ROLE_TEXT = { user: "普通用户", merchant: "商家", admin: "管理员" };
+
+  const accountBar = document.getElementById("accountBar");
+  const accountText = document.getElementById("accountText");
+  const accountAvatar = document.getElementById("accountAvatar");
+  const authEntryBtn = document.getElementById("authEntryBtn");
+  const myOrdersBtn = document.getElementById("myOrdersBtn");
+  const staffEntryBtn = document.getElementById("staffEntryBtn");
+
+  function backendOn() {
+    return Boolean(window.WujiApi && window.WujiApi.enabled());
+  }
+
   function init() {
     renderCategories();
     renderProducts("all");
     updateCartDisplay();
+    bindEvents();
+    bindAccountBar();
 
     WujiStore.subscribe((event) => {
       if (event.type === "CART_UPDATED") {
@@ -59,7 +75,69 @@
       }
     });
 
-    bindEvents();
+    if (backendOn()) {
+      loadProductsFromServer();
+      WujiApi.watchProducts(loadProductsFromServer);
+    }
+  }
+
+  // 后端商品覆盖本地缓存：商家上新/下架后，客户端不用刷新页面就能看到最新菜单
+  async function loadProductsFromServer() {
+    if (!backendOn()) return;
+    try {
+      const list = await WujiApi.products();
+      if (Array.isArray(list) && list.length > 0) {
+        WujiStore.setProducts(list);
+        renderProducts(activeCategoryId);
+        updateCartDisplay();
+      }
+    } catch (e) {
+      console.error("商品加载失败，暂用本地菜单", e);
+    }
+  }
+
+  function bindAccountBar() {
+    if (!backendOn()) {
+      if (accountBar) accountBar.style.display = "none";
+      return;
+    }
+    authEntryBtn?.addEventListener("click", async () => {
+      if (authEntryBtn.dataset.mode === "logout") {
+        await WujiApi.logout();
+        currentUser = null;
+        refreshAccountBar();
+        showToast("已退出登录");
+      } else {
+        location.href = "login.html?next=index.html";
+      }
+    });
+    myOrdersBtn?.addEventListener("click", () => { location.href = "my-orders.html"; });
+    staffEntryBtn?.addEventListener("click", () => { location.href = "staff.html"; });
+
+    refreshAccountBar();
+    WujiApi.onAuthChange(() => refreshAccountBar());
+  }
+
+  async function refreshAccountBar() {
+    if (!backendOn()) return;
+    try {
+      currentUser = await WujiApi.currentUser();
+    } catch (e) {
+      currentUser = null;
+    }
+    const isStaff = Boolean(currentUser) && (currentUser.role === "merchant" || currentUser.role === "admin");
+    if (accountText) {
+      accountText.textContent = currentUser
+        ? `${currentUser.nickname || "未填昵称"} · ${ROLE_TEXT[currentUser.role] || "普通用户"}`
+        : "未登录，登录后即可下单";
+    }
+    if (accountAvatar) accountAvatar.textContent = currentUser ? "🙂" : "👤";
+    if (authEntryBtn) {
+      authEntryBtn.textContent = currentUser ? "退出登录" : "登录 / 注册";
+      authEntryBtn.dataset.mode = currentUser ? "logout" : "login";
+    }
+    if (myOrdersBtn) myOrdersBtn.style.display = currentUser ? "inline-flex" : "none";
+    if (staffEntryBtn) staffEntryBtn.style.display = isStaff ? "inline-flex" : "none";
   }
 
   // 渲染分类导航（福袋馄炖位于生饺称斤上方）
@@ -144,7 +222,7 @@
         .map((t) => `<span class="tag-pill ${t.includes("招牌") ? "red" : "gold"}">${t}</span>`)
         .join("");
 
-      const isSoldOut = product.status === "sold_out";
+      const isSoldOut = Boolean(product.soldOut) || product.status === "sold_out";
       const icon = product.category === "wonton" ? "🥣" : "🥟";
       // 按斤分类下按钮写「选重量」，避免顾客以为是一份
       const btnLabel = isSoldOut
@@ -511,6 +589,7 @@
       cartBadge.style.display = "none";
       goToCheckoutBtn.disabled = true;
       renderCartDrawerItems([], null);
+      showToast(e?.message || "购物车里有商品已下架或售罄，请重新挑选");
     }
   }
 
@@ -613,11 +692,19 @@
       }
     });
 
-    const goToCheckout = () => {
+    const goToCheckout = async () => {
       const cart = WujiStore.getCart();
       if (!cart || cart.length === 0) {
         showToast("购物车为空");
         return;
+      }
+      if (backendOn()) {
+        if (!currentUser) currentUser = await WujiApi.currentUser().catch(() => null);
+        if (!currentUser) {
+          showToast("请先登录后再下单");
+          setTimeout(() => { location.href = "login.html?next=checkout.html"; }, 600);
+          return;
+        }
       }
       cartDrawerOverlay.classList.remove("active");
       window.location.href = "checkout.html";

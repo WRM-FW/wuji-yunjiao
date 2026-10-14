@@ -316,6 +316,63 @@
       margin-top: 2px;
     }
 
+    /* 取餐码横幅 */
+    /* UUID 单号在 320~390px 宽下不撑破抬头：小一号并限制宽度 */
+    #orderIdText {
+      font-size: 9.5px;
+      line-height: 1.35;
+      word-break: break-all;
+      max-width: 150px;
+    }
+    .pickup-code-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-radius: 10px;
+      padding: 10px 12px;
+      border: 1.5px dashed #CBD5E1;
+      background: #F8FAFC;
+    }
+    .pickup-code-label {
+      font-size: 11px;
+      color: #64748B;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+    .pickup-code-value {
+      font-size: 26px;
+      font-weight: 900;
+      line-height: 1.1;
+      color: #64748B;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 2px;
+    }
+    .pickup-code-hint {
+      font-size: 11px;
+      color: #94A3B8;
+      text-align: right;
+      max-width: 55%;
+      line-height: 1.4;
+    }
+    .pickup-code-banner[data-state="assigned"] {
+      border-style: solid;
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .pickup-code-banner[data-state="assigned"] .pickup-code-value { color: var(--primary); }
+    .pickup-code-banner[data-state="assigned"] .pickup-code-label { color: #B91C1C; }
+    .pickup-code-banner[data-state="completed"] {
+      border-color: #059669;
+      background: #ECFDF5;
+    }
+    .pickup-code-banner[data-state="completed"] .pickup-code-value { color: #047857; }
+    .pickup-code-banner[data-state="cancelled"] {
+      border-color: #CBD5E1;
+      background: #F1F5F9;
+    }
+    .pickup-code-banner[data-state="cancelled"] .pickup-code-value { color: #64748B; }
+
     /* ===== 响应式与按斤明细（本次优化新增） ===== */
     .pay-page-container {
       min-height: 100vh;
@@ -428,6 +485,17 @@
           </div>
         </div>
 
+        <!-- 取餐码：商家分配后自动出现，未分配时提示等待 -->
+        <div class="pickup-code-banner" id="pickupCodeBanner" data-state="pending">
+          <div>
+            <div class="pickup-code-label" id="pickupCodeLabel">取餐码</div>
+            <div class="pickup-code-value" id="pickupCodeValue">等待分配</div>
+          </div>
+          <div class="pickup-code-hint" id="pickupCodeHint">
+            商家接单后会分配取餐码，本页会自动更新
+          </div>
+        </div>
+
         <!-- 商品名称与数量列表 (清晰层级) -->
         <div>
           <table class="receipt-items-table">
@@ -494,17 +562,11 @@
         <div class="screenshot-guide-alert">
           <div class="guide-title">
             <span class="guide-icon">📢</span>
-            <strong>付款完成后操作说明</strong>
+            <strong>取餐说明</strong>
           </div>
           <div class="guide-flow-card">
-            <div class="guide-prompt-text">付款完成后，请将</div>
-            <div class="guide-badge-group">
-              <span class="guide-badge">当前订单页面截图</span>
-              <span class="guide-plus">和</span>
-              <span class="guide-badge">支付信息截图</span>
-            </div>
             <div class="guide-foot-text">
-              一并发送至订餐群，以便核对订单和付款情况。
+              出餐后凭借取餐码以及包含时间信息的付款截图取餐。
             </div>
           </div>
         </div>
@@ -515,12 +577,18 @@
         <a href="index.html" class="btn-secondary" style="flex: 1; text-decoration: none;">
           🥟 再来一单 / 返回
         </a>
+        <a href="my-orders.html" class="btn-secondary" style="flex: 1; text-decoration: none;">
+          📋 我的订单
+        </a>
       </div>
     </main>
 
     <div id="toast" class="toast-container"></div>
   </div>
 
+  <script src="js/vendor/supabase-2.117.3.umd.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
   <script src="js/mock-data.js"></script>
   <script src="js/store.js"></script>
   <script src="js/pay.js"></script>

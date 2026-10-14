@@ -6,29 +6,36 @@
 
 ## 一、系统定位与架构原则
 
-1. **纯前端架构**
-   - 网站仅依赖标准前端能力（HTML5 / CSS3 / JavaScript ES6+ / LocalStorage），无需 Node.js 后端、数据库或第三方 API 服务。
-   - 彻底移除商家后台管理模块（`/admin.html`）及相关服务端接口，避免引入不必要的管理负担和运维成本。
-2. **纯前端架构的能力限制说明**
-   - **支付验证边界**：页面展示的学校统一收款二维码仅供顾客扫码转账，前端页面**无法感知银行或第三方支付的真实到账状态**，亦不会进行虚假自动支付验证。
-   - **订单确认边界**：顾客在前端点击提交生成的订单，仅保存在当前浏览器的本地存储中并用于生成截图凭证，**不代表已被商家后台云端自动接收**；订单的真实确认与出餐排单完全依赖顾客按照指引将截图发送至订餐群后，由档口工作人员人工核验。
+1. **静态前端 + Supabase 后端（v2.1 起）**
+   - 页面仍是零构建的静态站（HTML5 / CSS3 / ES6+），部署在 GitHub Pages；账号、商品、订单与取餐码放在 Supabase（免费档），浏览器只持有可公开的 publishable key。
+   - 没有自建 Node 服务、没有容器、没有自建后台进程：权限、计价与状态流转全部下沉到数据库的 RLS 与 `security definer` 函数。
+   - 未配置后端时自动退回 v2.0.0 的纯前端形态（本地菜单 + 本地订单），便于离线开发与回退。
+2. **能力边界（两种形态都成立）**
+   - **支付验证边界**：页面展示的学校统一收款二维码仅供顾客扫码转账，系统**无法感知银行或第三方支付的真实到账状态**，不做任何"已自动校验付款"的暗示。
+   - **订单确认边界**：接入后端后，订单会真实落库并被商家端看到、分配取餐码；但**付款是否到账仍需档口在订餐群里核对含时间的付款截图**，退款也一律由档口在群里办理，系统不会自动退款。
 
 ---
 
 ## 二、功能与交互流程
 
 ```text
-[选餐首页 index.html]
+[登录 / 注册 login.html]   手机号或邮箱 + 密码，注册即用，无短信与邮件验证
        │
-       ▼ （纯文字菜品浏览、规格定制：熟食/生饺、辣度、葱花香菜、加购）
-[订单结算 checkout.html]
+       ▼
+[选餐首页 index.html]      菜单来自数据库；未登录可浏览，下单需登录
+       │                   熟食按份 / 生饺按斤（0.1 斤精度）
+       ▼
+[订单结算 checkout.html]   堂食或自取、自由选择/输入出餐时间、填写备注，无联系人信息
        │
-       ▼ （选择堂食/自取、自由选择/输入出餐时间、填写备注，无联系人信息）
-[扫码支付与凭证页 pay.html]
+       ▼  submit_order()：服务端按当前商品价格重算金额并落库
+[扫码支付与凭证页 pay.html] 取餐码横幅：等待分配 → 商家分配后自动出现
        │
-       ▼ （展示核心四要素、金额、中银收款码，用户截图发送至订餐群）
-[微信订餐群人工核验出餐]
+       ▼  出餐后凭「取餐码 + 含时间的付款截图」取餐
+[商家端 staff.html]        订单卡片 → 手动分配 001–300 号码 → 标记已取餐即释放号码
 ```
+
+未配置后端（`js/config.js` 里 URL 与 key 还是占位值）时，站点自动退回 v2.0.0 的纯前端形态：
+本地菜单 + 本地订单 + 截图发群人工核验，登录与商家端入口隐藏。
 
 ### 1. 计价规则：熟食按份、生饺按斤
 - **熟食现煮**按「份」卖，数量为整数份，单价即 `priceCooked` 元/份。
@@ -90,15 +97,26 @@ wuji-yunjiao/
 ├── index.html                   # 顾客选餐首页（纯文字商品列表、分类联动、规格弹窗、购物车）
 ├── checkout.html                # 订单结算页（堂食/自取、自由选择出餐时间、备注、可信核算）
 ├── pay.html                     # 扫码支付与订单确认页（专为截图核验设计：四大核心信息、中银收款码、群指引）
+├── login.html                   # 统一注册 / 登录入口（手机号或邮箱 + 密码，无短信验证）
+├── my-orders.html               # 我的订单：状态、取餐码、未分配前可取消（含退款指引与订餐群码）
+├── staff.html                   # 商家端：订单与取餐码、商品上下架与新增编辑、用户身份
 ├── css/
-│   ├── style.css                # 移动端纯文字排版视觉设计、主题变量
-│   └── components.css           # 纯文字规格弹窗、抽屉、步进器、Toast 等通用组件
+│   ├── style.css                # 应用外壳、双栏点餐、断点与计价文案、主题变量
+│   └── components.css           # 抽屉、弹窗、步进器、重量输入、Toast 等通用组件
 ├── js/
-│   ├── mock-data.js             # 菜单与店铺基础数据 + RAW_SELL_CONFIG（生饺称重档位）
-│   ├── store.js                 # 纯前端数据存储层（按份/按斤双轨算费、每斤立减线性计算、防篡改）
-│   ├── app.js                   # 首页分类切换、双列/单列商品卡、份数步进器与重量输入、购物车
-│   ├── checkout.js              # 结算页逻辑、自定义时间处理、订单创建与直接跳转
-│   └── pay.js                   # 支付确认页逻辑、核心信息提取、份数/斤数分列展示
+│   ├── config.js                # Supabase URL / anon key（可公开值）与刷新间隔
+│   ├── api.js                   # 后端访问层：认证、商品、订单、取餐码、Realtime + 轮询兜底
+│   ├── vendor/supabase-*.js     # supabase-js UMD（随仓库发布，不依赖外部 CDN）
+│   ├── mock-data.js             # 纯前端回退用的菜单种子 + RAW_SELL_CONFIG（生饺称重档位）
+│   ├── store.js                 # 本地购物车与前端算费预览（下单金额以数据库为准）
+│   ├── app.js                   # 首页：分类、双列/单列列表、份数与重量选购、账号条
+│   ├── login.js                 # 注册登录页逻辑
+│   ├── checkout.js              # 结算页：调用 submit_order 把订单提交到后端
+│   ├── my-orders.js             # 我的订单列表与取消
+│   ├── staff.js                 # 商家端三块面板、号池与商品表单
+│   └── pay.js                   # 支付凭证页：订单详情、取餐码自动出现、份/斤明细
+├── supabase/
+│   └── migrations/              # 建表、RLS、业务函数、Realtime，按时间戳顺序 db push
 ├── assets/
 │   └── images/
 │       ├── logo_mascot.png      # 品牌吉祥物（欢迎光临饺子娃娃）
@@ -132,9 +150,86 @@ wuji-yunjiao/
 
 ---
 
-## 五、回归验证（改完必跑）
+## 五、后端与权限（Supabase）
 
-两个脚本都在仓库外的 `RestWeb_Develop/_tools/`，不随站点发布：
+### 数据表
+| 表 | 作用 | 关键约束 |
+| --- | --- | --- |
+| `profiles` | 昵称、手机号、邮箱、角色 | `role ∈ user/merchant/admin`；列级 `revoke update (role)` + 触发器双重挡越权 |
+| `products` | 商品主数据（商家端直接维护） | `pricing_mode ∈ portion/weight/both`；`listing_status ∈ on/off`；`sold_out` |
+| `orders` | 订单主表 | 状态机 `pending → assigned → completed`，`pending` 可 `cancelled`；`check ((code is null) or status in ('assigned','completed'))` |
+| `order_items` | 订单明细快照 | 商品改名/改价/下架都不影响历史订单，金额与单位在下单瞬间冻结 |
+| `pickup_codes` | 取餐码号池 001–300 | `check (code ~ '^[0-9]{3}$' and code between '001' and '300')` |
+
+取餐码的"占用"不额外存状态位，而是看有没有 `status='assigned'` 的订单挂着它：
+`create unique index orders_active_code_ux on orders(code) where status='assigned'`
+这一条索引就是并发抢码的最终防线——同一个号同时挂两笔未完成订单在数据库层直接失败；
+商家标记已取餐后号码自动回到可分配范围，不存在"状态位忘记释放"这类不一致。
+
+### 权限模型
+- 读：`orders` / `order_items` 的 RLS 策略是 `user_id = auth.uid() or wuji_is_staff()`，
+  顾客越权读别人的订单会拿到空结果；`products` 对匿名只放开 `listing_status='on'`。
+- 写：`orders`、`order_items`、`pickup_codes` 对 `authenticated` **只给 select**，
+  所有写入必须走 `security definer` 函数（`submit_order` / `cancel_order` /
+  `assign_pickup_code` / `complete_pickup` / `set_user_role`），函数体内再判一次角色。
+- `products` 允许商家/管理员直接增删改，由 RLS 的 `wuji_is_staff()` 把关；普通用户 PATCH 返回 403。
+- 角色变更只允许 admin，且不允许改自己（防止把自己降级后没人能改回来）。
+- 前端只持有 anon key（`js/config.js`），service_role key 不进仓库、不进浏览器。
+
+### 手机号登录的处理
+Supabase 的手机密码登录是企业版功能、手机注册强制短信验证，与"不做短信验证"冲突。
+本项目把手机号映射成 `<数字>@phone.wuji.app` 形式的账号标识走邮箱密码认证，
+真实手机号另存 `profiles.contact_phone` 供商家按号筛选；控制台需关闭
+Email Confirmation（`SITE_URL` 可留空），注册后即可直接登录。
+
+### 初始化步骤
+本项目已接好的后端：Project URL `https://mqehgoavvthwxdwbelvc.supabase.co`（免费档），
+URL 与 publishable key 已写入 `js/config.js`（两者都是可公开的浏览器端值）。
+
+在仓库根目录准备一个 **不入库** 的 `.env`（`.gitignore` 已忽略），供 CLI 与脚本读取：
+```
+SUPABASE_DB_PASSWORD=<项目数据库密码>
+WUJI_ADMIN_EMAIL=<管理员邮箱>
+WUJI_ADMIN_PASSWORD=<管理员登录密码>
+```
+然后：
+```bash
+supabase login                                  # 令牌由本人粘贴，不进命令行历史
+supabase link --project-ref mqehgoavvthwxdwbelvc
+supabase db push                                # 按 supabase/migrations/ 顺序建表、策略与函数
+supabase config push                            # 关闭邮箱验证（[auth.email] enable_confirmations=false）
+node ../_tools/wuji_bootstrap.mjs               # 用 .env 里的账号建初始管理员
+# 再把它提为管理员：把 SQL 写进一个临时文件（Windows 下没有进程替换）
+#   update public.profiles set role='admin' where contact_email='<管理员邮箱>';
+supabase db query --linked --file promote.sql
+node ../_tools/supabase_acceptance.mjs          # 后端验收
+node ../_tools/cdp_e2e_backend.mjs              # 前端页面 × 后端端到端
+node ../_tools/cdp_layout_check.mjs             # 多视口布局与交互
+```
+`supabase/config.toml` 里 `site_url` 指向 Pages 线上地址；改认证参数走
+`supabase config pull` → 编辑 → `supabase config push`，不要手改控制台后再忘记同步回仓库。
+
+注意：`wuji_guard_profile_update()` 触发器对改 `role` 一律拦截，只放行
+`session_user in ('postgres','supabase_admin')` 的直连通道（控制台 SQL Editor / `supabase db query`），
+这是初始管理员引导与运维救火的唯一入口；浏览器经 PostgREST 进来时 `session_user` 是
+`authenticator`，永远拿不到这个放行。
+
+### 商家端刷新策略
+`js/api.js` 的 `watchOrders()` 以 Realtime `postgres_changes`（orders / order_items）为主，
+12 秒轮询兜底，并在页面重新可见、网络恢复时立刻补一次刷新；
+商家正在输入但尚未提交的取餐码存放在 `draftCodes` 里，列表重绘时回填，不会被刷新冲掉。
+
+### 验收
+`_tools/supabase_acceptance.mjs` 直接打 Supabase 的 REST / Auth 接口跑完整业务链：
+注册（手机号与邮箱）→ 下单计价 → 重复提交幂等 → 越权读别人订单 → 普通用户改商品/自升角色被拒 →
+管理员设商家 → 分配 007 → 号池余量变化 → 分配后顾客不能取消 → 两商家并发抢 085 只有一个成功 →
+标记已取餐释放号码并可再分配 → 新增商品客户端可见并下单 → 下架后不可新购 → 重新上架恢复 →
+改价改售罄不影响历史订单快照 → 我的订单互不重叠。
+
+
+## 六、回归验证（改完必跑）
+
+三个脚本都在仓库外的 `RestWeb_Develop/_tools/`，不随站点发布：
 
 1. **计价回归**：`node _tools/test_pricing.mjs`
    在 Node 沙箱里加载 `mock-data.js` + `store.js`，用 stub localStorage 跑真实算费代码，覆盖按份/按斤、0.1 斤精度与上下限、每斤立减线性计算、金额按分取整、混合单件数与斤数分列、购物车合并与 ±0.5 斤步进、订单落库字段，共 50 项断言。

@@ -103,6 +103,15 @@
       return products.find((p) => p.id === id) || null;
     }
 
+    // 用后端商品覆盖本地缓存：本地缓存只作为离线兜底与购物车渲染快照，
+    // 下单时金额仍由数据库端的 submit_order 重算
+    setProducts(list) {
+      if (!Array.isArray(list) || list.length === 0) return 0;
+      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(list));
+      this.notifyListeners({ type: "PRODUCTS_UPDATED", data: list });
+      return list.length;
+    }
+
     // 可信金额核算：熟食按份（整数）、生饺按斤（0.1 斤精度），金额按分取整
     calculateTrustedOrder(cartItems) {
       const products = this.getProducts();
@@ -117,8 +126,11 @@
       for (const item of cartItems || []) {
         const product = products.find((p) => p.id === item.productId);
         if (!product) continue;
-        if (product.status === "sold_out") {
+        if (product.soldOut || product.status === "sold_out") {
           throw new Error(`商品「${product.name}」已售罄，请移出购物车`);
+        }
+        if (product.listingStatus === "off") {
+          throw new Error(`商品「${product.name}」已下架，请移出购物车`);
         }
 
         const isRaw = Boolean(item.isRaw) && Boolean(product.supportRaw);

@@ -1,6 +1,6 @@
 {
   "name": "wuji-yunjiao",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "河南信息科技学院三楼「吴记云饺」纯前端移动端点餐与截图核验系统",
   "main": "index.html",
   "scripts": {
