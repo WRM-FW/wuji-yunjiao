@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#C92A2A"/>
+  <path d="M12 38c0-11 9-19 20-19s20 8 20 19c0 2-1.6 3.4-3.6 3.4H15.6C13.6 41.4 12 40 12 38z" fill="#FFF3E0"/>
+  <path d="M12 38c4-2 6-6 8-9M52 38c-4-2-6-6-8-9M24 30c1-3 3-5 8-5s7 2 8 5" stroke="#E8B87B" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  <text x="32" y="55" font-size="14" text-anchor="middle" fill="#FFF3E0" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-weight="700">吴记</text>
+</svg>
