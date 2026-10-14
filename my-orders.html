@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>我的订单 - 吴记云饺</title>
+  <meta name="description" content="查看你在吴记云饺提交的历史订单、取餐码与订单状态，未分配取餐码的订单可直接取消。" />
+  <meta name="theme-color" content="#C92A2A" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <style>
+    .mo-wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 12px 12px calc(24px + var(--safe-bottom));
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .mo-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--border-color);
+      padding: calc(12px + var(--safe-top)) 12px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .mo-topbar h1 { font-size: 16px; font-weight: 700; }
+    .mo-back {
+      background: none;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--primary);
+      cursor: pointer;
+      padding: 6px 4px;
+    }
+    .mo-filter-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      overscroll-behavior: contain;
+      padding-bottom: 2px;
+    }
+    .mo-filter {
+      flex: 0 0 auto;
+      border: 1px solid var(--border-color);
+      background: #FFFFFF;
+      color: var(--text-muted);
+      border-radius: 16px;
+      padding: 5px 12px;
+      font-size: 12.5px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .mo-filter.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+    }
+    .mo-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mo-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .mo-order-id {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mo-status {
+      flex-shrink: 0;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+    }
+    .mo-status.pending { background: #FFFBEB; color: #B45309; border-color: #FDE68A; }
+    .mo-status.assigned { background: var(--primary-light); color: var(--primary); border-color: var(--primary-soft); }
+    .mo-status.completed { background: #ECFDF5; color: #047857; border-color: #A7F3D0; }
+    .mo-status.cancelled { background: #F1F5F9; color: #64748B; border-color: #E2E8F0; }
+    .mo-code-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: var(--primary-light);
+      border: 1px solid var(--primary-soft);
+      border-radius: 8px;
+      padding: 7px 10px;
+    }
+    .mo-code-row.empty { background: #F8FAFC; border-color: var(--border-color); }
+    .mo-code-label { font-size: 11.5px; color: var(--text-muted); }
+    .mo-code-value {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: var(--primary);
+      font-variant-numeric: tabular-nums;
+    }
+    .mo-code-value.wait { font-size: 13px; letter-spacing: 0; color: var(--text-muted); font-weight: 600; }
+    .mo-items { display: flex; flex-direction: column; gap: 4px; }
+    .mo-item {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 13px;
+    }
+    .mo-item-name { min-width: 0; flex: 1; }
+    .mo-item-spec { font-size: 11px; color: var(--text-muted); }
+    .mo-item-qty { flex-shrink: 0; color: var(--text-muted); font-weight: 600; font-size: 12px; }
+    .mo-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      border-top: 1px dashed var(--border-color);
+      padding-top: 7px;
+    }
+    .mo-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .mo-total { font-size: 15px; font-weight: 800; color: var(--primary); }
+    .mo-actions { display: flex; gap: 8px; }
+    .mo-btn {
+      border: 1px solid var(--border-color);
+      background: #FFFFFF;
+      color: var(--text-main);
+      border-radius: 16px;
+      padding: 6px 12px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      min-height: 32px;
+    }
+    .mo-btn.danger { color: #B91C1C; border-color: #FECACA; background: #FEF2F2; }
+    .mo-btn.primary { color: #fff; background: var(--primary); border-color: var(--primary); }
+    .mo-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .mo-empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    .mo-tip {
+      background: #FFFBEB;
+      border: 1px solid #FEF3C7;
+      border-radius: 8px;
+      padding: 9px 11px;
+      font-size: 12px;
+      color: #92400E;
+      line-height: 1.55;
+    }
+    @media (min-width: 761px) {
+      .mo-wrap { padding: 16px 16px calc(28px + var(--safe-bottom)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="mo-topbar">
+      <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+        <button class="mo-back" id="backBtn">‹ 返回点餐</button>
+        <h1>我的订单</h1>
+      </div>
+      <button class="mo-btn" id="refreshBtn">刷新</button>
+    </header>
+
+    <main class="mo-wrap">
+      <div class="mo-filter-row" id="statusFilter">
+        <button class="mo-filter active" data-status="all">全部</button>
+        <button class="mo-filter" data-status="pending">待分配取餐码</button>
+        <button class="mo-filter" data-status="assigned">待取餐</button>
+        <button class="mo-filter" data-status="completed">已取餐</button>
+        <button class="mo-filter" data-status="cancelled">已取消</button>
+      </div>
+
+      <div class="mo-tip">
+        取餐码由档口商家分配；<strong>分配前可以取消</strong>，取消后请进订餐群联系档口办理退款。
+        已分配取餐码的订单不能在客户端取消，如需改动请直接联系商家。
+      </div>
+
+      <div id="orderList"></div>
+    </main>
+
+    <!-- 取消订单确认（含订餐群入口） -->
+    <div id="cancelModalOverlay" class="modal-overlay center">
+      <div class="modal-center-card">
+        <div style="padding: 16px;">
+          <h3 style="font-size: 16px; font-weight: 700;">确认取消这笔订单？</h3>
+          <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin-top: 8px;">
+            取消后订单不再出餐。<strong style="color: #B45309;">已付款的订单需要进入订餐群联系档口办理退款</strong>，
+            系统不会自动退款。
+          </p>
+          <div style="background: #F8F9FA; border-radius: 10px; padding: 10px; margin-top: 10px; text-align: center;">
+            <img src="assets/images/wechat_group.jpg" alt="吴记云饺订餐群二维码"
+                 style="width: 168px; height: 200px; object-fit: contain; border-radius: 8px;" />
+            <div style="font-size: 11px; color: #94A3B8; margin-top: 6px;">长按识别二维码进群，说明单号与付款情况</div>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 12px;">
+            <button class="btn-secondary" id="cancelModalCloseBtn" style="flex: 1;">再想想</button>
+            <button class="btn-primary" id="confirmCancelBtn" style="flex: 1;">确认取消订单</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast-container"></div>
+  </div>
+
+  <script src="js/vendor/supabase-2.117.3.umd.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/mock-data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/my-orders.js"></script>
+</body>
+</html>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>商家管理 - 吴记云饺</title>
+  <meta name="description" content="吴记云饺商家端：订单接单与取餐码分配、商品上下架与新增编辑、用户身份管理。" />
+  <meta name="theme-color" content="#1E293B" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <style>
+    body { background: #EEF1F5; }
+    .st-wrap { max-width: 1180px; margin: 0 auto; padding: 12px 12px calc(28px + var(--safe-bottom)); }
+    .st-topbar {
+      position: sticky; top: 0; z-index: 40;
+      background: #1E293B; color: #fff;
+      margin: -12px -12px 12px;
+      padding: calc(12px + var(--safe-top)) 14px 12px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, .18);
+    }
+    .st-topbar h1 { font-size: 16px; font-weight: 800; letter-spacing: .5px; }
+    .st-who { font-size: 11.5px; opacity: .88; text-align: right; line-height: 1.4; }
+    .st-tabs { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; overscroll-behavior: contain; }
+    .st-tab {
+      flex: 0 0 auto; padding: 8px 16px; min-height: 38px;
+      border-radius: 20px; border: 1px solid var(--border-color);
+      background: #fff; color: var(--text-muted); font-size: 13.5px; font-weight: 600; cursor: pointer;
+    }
+    .st-tab.active { background: #1E293B; border-color: #1E293B; color: #fff; }
+    .st-panel { display: none; }
+    .st-panel.active { display: block; }
+    .st-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      background: #fff; border: 1px solid var(--border-light); border-radius: 10px;
+      padding: 9px 12px; margin-bottom: 10px; flex-wrap: wrap;
+    }
+    .st-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .st-chip {
+      border: 1px solid var(--border-color); background: #F8FAFC; color: var(--text-muted);
+      border-radius: 14px; padding: 4px 11px; font-size: 12.5px; cursor: pointer; min-height: 28px;
+    }
+    .st-chip.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); font-weight: 700; }
+    .st-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 761px) { .st-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (min-width: 1100px) { .st-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .st-card {
+      background: #fff; border: 1px solid var(--border-light); border-radius: 12px;
+      box-shadow: var(--shadow-sm); padding: 12px 14px; min-width: 0;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .st-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .st-order-id { font-size: 11.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .st-badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 12px; flex-shrink: 0; }
+    .st-badge.pending { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
+    .st-badge.assigned { background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-soft); }
+    .st-badge.completed { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+    .st-badge.cancelled { background: #F1F5F9; color: #64748B; border: 1px solid #E2E8F0; }
+    .st-customer { font-size: 12.5px; color: var(--text-main); }
+    .st-customer strong { font-size: 14px; }
+    .st-items { display: flex; flex-direction: column; gap: 3px; border-top: 1px dashed var(--border-color); padding-top: 7px; }
+    .st-item { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+    .st-item-sub { font-size: 11px; color: var(--text-muted); }
+    .st-item-qty { font-weight: 700; color: var(--primary); flex-shrink: 0; }
+    .st-meta { font-size: 11.5px; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 3px 10px; }
+    .st-total { font-size: 15px; font-weight: 800; color: var(--primary); }
+    .st-code-area {
+      border-top: 1px solid var(--border-light); padding-top: 9px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .st-code-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .st-code-input {
+      width: 92px; padding: 8px 10px; font-size: 17px; font-weight: 800; letter-spacing: 2px;
+      text-align: center; border: 1.5px solid var(--border-color); border-radius: 8px;
+      font-family: inherit; outline: none; background: #fff;
+    }
+    .st-code-input:focus { border-color: var(--primary); }
+    .st-current-code {
+      font-size: 24px; font-weight: 900; letter-spacing: 2px; color: var(--primary);
+      font-variant-numeric: tabular-nums;
+    }
+    .st-btn {
+      border: 1px solid var(--border-color); background: #fff; color: var(--text-main);
+      border-radius: 8px; padding: 8px 14px; min-height: 36px; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .st-btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .st-btn.dark { background: #1E293B; border-color: #1E293B; color: #fff; }
+    .st-btn.ghost { background: #F8FAFC; }
+    .st-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .st-btn.sm { min-height: 30px; padding: 4px 10px; font-size: 12px; border-radius: 6px; }
+    .st-pool {
+      background: #fff; border: 1px solid var(--border-light); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
+    }
+    .st-pool-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .st-pool-title { font-size: 13px; font-weight: 700; }
+    .st-pool-count { font-size: 12px; color: var(--text-muted); }
+    .st-pool-count b { color: var(--primary); font-size: 16px; }
+    .st-pool-toggle { font-size: 12px; color: var(--primary); background: none; border: none; cursor: pointer; padding: 4px; }
+    .st-pool-codes {
+      display: none; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+      gap: 5px; margin-top: 10px; max-height: 220px; overflow-y: auto; overscroll-behavior: contain;
+    }
+    .st-pool-codes.show { display: grid; }
+    .st-code-cell {
+      border: 1px solid var(--border-color); background: #F8FAFC; border-radius: 5px;
+      font-size: 12px; text-align: center; padding: 4px 0; cursor: pointer; font-variant-numeric: tabular-nums;
+    }
+    .st-code-cell:hover { border-color: var(--primary); color: var(--primary); }
+    .st-code-cell.picked { background: var(--primary-light); border-color: var(--primary); color: var(--primary); font-weight: 700; }
+    /* 商品管理 */
+    .pd-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .pd-name { font-size: 15px; font-weight: 700; }
+    .pd-price { font-size: 13px; color: var(--primary); font-weight: 700; }
+    .pd-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+    .pd-tag { font-size: 10.5px; padding: 2px 7px; border-radius: 4px; background: #F1F5F9; color: var(--text-muted); }
+    .pd-tag.on { background: #ECFDF5; color: #047857; }
+    .pd-tag.off { background: #F1F5F9; color: #64748B; }
+    .pd-tag.sold { background: #FEF2F2; color: #B91C1C; }
+    .pd-actions { display: flex; gap: 6px; flex-wrap: wrap; border-top: 1px dashed var(--border-color); padding-top: 8px; }
+    /* 表单 */
+    .fm-row { margin-bottom: 12px; }
+    .fm-label { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; }
+    .fm-input, .fm-select, .fm-textarea {
+      width: 100%; padding: 9px 11px; font-size: 14px; font-family: inherit;
+      border: 1.5px solid var(--border-color); border-radius: 8px; background: #F8FAFC; outline: none;
+    }
+    .fm-input:focus, .fm-select:focus, .fm-textarea:focus { border-color: var(--primary); background: #fff; }
+    .fm-textarea { min-height: 62px; resize: vertical; }
+    .fm-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .fm-preview {
+      background: #F8FAFC; border: 1px dashed var(--border-color); border-radius: 8px;
+      padding: 9px 11px; font-size: 12.5px; color: var(--text-muted); line-height: 1.6;
+    }
+    .fm-preview b { color: var(--primary); font-size: 14px; }
+    /* 用户管理 */
+    .us-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      background: #fff; border: 1px solid var(--border-light); border-radius: 10px;
+      padding: 10px 12px; margin-bottom: 8px;
+    }
+    .us-main { min-width: 0; }
+    .us-name { font-size: 14px; font-weight: 700; }
+    .us-sub { font-size: 11.5px; color: var(--text-muted); word-break: break-all; }
+    .us-role { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: #F1F5F9; color: #475569; }
+    .us-role.merchant { background: var(--primary-light); color: var(--primary); }
+    .us-role.admin { background: #1E293B; color: #fff; }
+    .st-empty { text-align: center; padding: 40px 16px; color: var(--text-muted); font-size: 13px; background: #fff; border-radius: 12px; border: 1px dashed var(--border-color); }
+    .st-note { font-size: 11.5px; color: var(--text-muted); line-height: 1.6; }
+    .st-new-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #22C55E; margin-left: 4px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="st-topbar">
+      <div>
+        <h1>🛠 吴记云饺 · 商家管理</h1>
+        <div class="st-who" id="whoText" style="text-align:left;">正在识别身份...</div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="st-btn sm ghost" id="backToMenuBtn">返回点餐</button>
+        <button class="st-btn sm ghost" id="logoutBtn">退出</button>
+      </div>
+    </header>
+
+    <main class="st-wrap">
+      <div class="st-tabs">
+        <button class="st-tab active" data-panel="orders">📥 订单与取餐码</button>
+        <button class="st-tab" data-panel="products">🥟 商品管理</button>
+        <button class="st-tab" data-panel="users">👥 用户与身份</button>
+      </div>
+
+      <!-- ==================== 订单 ==================== -->
+      <section class="st-panel active" id="panelOrders">
+        <div class="st-pool">
+          <div class="st-pool-head">
+            <div class="st-pool-title">取餐码号池 001–300</div>
+            <div class="st-pool-count" id="poolSummary">剩余 <b>--</b> 个可用 · 已占用 -- 个</div>
+          </div>
+          <div style="display:flex; justify-content: space-between; align-items:center; margin-top:6px;">
+            <button class="st-pool-toggle" id="poolToggleBtn">展开可用号码</button>
+            <span class="st-note" id="poolUpdatedAt">--</span>
+          </div>
+          <div class="st-pool-codes" id="poolCodes"></div>
+        </div>
+
+        <div class="st-bar">
+          <div class="st-chips" id="orderFilter">
+            <button class="st-chip active" data-status="pending">待分配</button>
+            <button class="st-chip" data-status="assigned">待取餐</button>
+            <button class="st-chip" data-status="completed">已取餐</button>
+            <button class="st-chip" data-status="cancelled">已取消</button>
+            <button class="st-chip" data-status="all">全部</button>
+          </div>
+          <button class="st-btn sm" id="refreshOrdersBtn">刷新</button>
+        </div>
+
+        <div class="st-grid" id="ordersGrid"></div>
+      </section>
+
+      <!-- ==================== 商品 ==================== -->
+      <section class="st-panel" id="panelProducts">
+        <div class="st-bar">
+          <div class="st-chips">
+            <button class="st-chip active" data-pfilter="all">全部商品</button>
+            <button class="st-chip" data-pfilter="on">在售</button>
+            <button class="st-chip" data-pfilter="off">已下架</button>
+          </div>
+          <button class="st-btn sm dark" id="newProductBtn">＋ 新增商品</button>
+        </div>
+        <div class="st-grid" id="productsGrid"></div>
+      </section>
+
+      <!-- ==================== 用户 ==================== -->
+      <section class="st-panel" id="panelUsers">
+        <div class="st-bar">
+          <input class="fm-input" id="userSearchInput" placeholder="输入手机号 / 邮箱 / 昵称筛选用户" style="flex:1; min-width: 180px;" />
+          <button class="st-btn sm" id="userSearchBtn">查询</button>
+        </div>
+        <p class="st-note" id="roleHint">商家与管理员都能查看用户；只有管理员可以把用户设为商家。</p>
+        <div id="usersList"></div>
+      </section>
+    </main>
+
+    <!-- 商品编辑抽屉 -->
+    <div id="productDrawerOverlay" class="modal-overlay">
+      <div class="drawer-bottom-card">
+        <div class="drawer-header">
+          <div class="drawer-title" id="productDrawerTitle">新增商品</div>
+          <button class="drawer-close-btn" id="productDrawerCloseBtn">&times;</button>
+        </div>
+        <div class="drawer-body">
+          <div class="fm-row">
+            <label class="fm-label" for="pfName">商品名称 *</label>
+            <input class="fm-input" id="pfName" maxlength="30" placeholder="例如：酸菜鲜肉饺子" />
+          </div>
+          <div class="fm-row fm-two">
+            <div>
+              <label class="fm-label" for="pfCategory">分类 *</label>
+              <select class="fm-select" id="pfCategory">
+                <option value="jiaozi_cooked">热食水饺</option>
+                <option value="wonton">福袋馄炖</option>
+              </select>
+            </div>
+            <div>
+              <label class="fm-label" for="pfMode">计价方式 *</label>
+              <select class="fm-select" id="pfMode">
+                <option value="portion">按份卖（一份固定价）</option>
+                <option value="both">两种卖法（熟食按份 + 生饺按斤）</option>
+                <option value="weight">只按斤卖（生饺称重）</option>
+              </select>
+            </div>
+          </div>
+          <div class="fm-row fm-two" id="pfCookedRow">
+            <div>
+              <label class="fm-label" for="pfPriceCooked">熟食单价（元）</label>
+              <input class="fm-input" id="pfPriceCooked" type="number" min="0" step="0.1" inputmode="decimal" placeholder="12.8" />
+            </div>
+            <div>
+              <label class="fm-label" for="pfUnitCooked">计价单位</label>
+              <input class="fm-input" id="pfUnitCooked" maxlength="4" value="份" />
+            </div>
+          </div>
+          <div class="fm-row fm-two" id="pfRawRow" style="display:none;">
+            <div>
+              <label class="fm-label" for="pfPriceRaw">生饺单价（元）</label>
+              <input class="fm-input" id="pfPriceRaw" type="number" min="0" step="0.1" inputmode="decimal" placeholder="11.8" />
+            </div>
+            <div>
+              <label class="fm-label" for="pfUnitRaw">计价单位</label>
+              <input class="fm-input" id="pfUnitRaw" maxlength="4" value="斤" />
+            </div>
+          </div>
+          <div class="fm-row" id="pfDiscountRow" style="display:none;">
+            <label class="fm-label" for="pfRawDiscount">每斤立减金额（元，用于展示优惠）</label>
+            <input class="fm-input" id="pfRawDiscount" type="number" min="0" step="0.1" inputmode="decimal" value="1" />
+          </div>
+          <div class="fm-row">
+            <label class="fm-label" for="pfDesc">商品说明</label>
+            <textarea class="fm-textarea" id="pfDesc" maxlength="120" placeholder="一两句话说清馅料与口味，顾客靠这行字做决定"></textarea>
+          </div>
+          <div class="fm-row fm-two">
+            <div>
+              <label class="fm-label" for="pfTags">标签（用空格分隔）</label>
+              <input class="fm-input" id="pfTags" maxlength="60" placeholder="招牌热销 现包现煮" />
+            </div>
+            <div>
+              <label class="fm-label" for="pfSort">排序号（小的排前面）</label>
+              <input class="fm-input" id="pfSort" type="number" step="10" value="160" />
+            </div>
+          </div>
+          <div class="fm-row">
+            <label class="fm-label" for="pfSpiciness">口味可选项（用空格分隔，留空则不显示）</label>
+            <input class="fm-input" id="pfSpiciness" maxlength="60" value="不辣 微辣 香辣" />
+          </div>
+          <div class="fm-row">
+            <label class="fm-label" for="pfCondiments">配料可选项（用空格分隔）</label>
+            <input class="fm-input" id="pfCondiments" maxlength="80" value="正常葱花香菜 免葱免香菜 只要葱花 只要香菜" />
+          </div>
+          <div class="fm-row" style="display:flex; gap:16px;">
+            <label style="font-size:13px; display:flex; align-items:center; gap:6px;">
+              <input type="checkbox" id="pfListingOn" checked /> 立即上架
+            </label>
+            <label style="font-size:13px; display:flex; align-items:center; gap:6px;">
+              <input type="checkbox" id="pfSoldOut" /> 今日售罄
+            </label>
+          </div>
+          <div class="fm-preview" id="pfPreview">顾客看到的卡片预览会显示在这里。</div>
+        </div>
+        <div class="drawer-footer">
+          <div>
+            <div style="font-size:11px; color:var(--text-muted);">保存后立即生效</div>
+            <div style="font-size:14px; font-weight:700;" id="pfFooterName">新商品</div>
+          </div>
+          <button id="saveProductBtn" class="btn-primary" style="width:auto; padding:10px 22px;">保存商品</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast-container"></div>
+  </div>
+
+  <script src="js/vendor/supabase-2.117.3.umd.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/mock-data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/staff.js"></script>
+</body>
+</html>

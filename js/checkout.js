@@ -28,12 +28,21 @@
   const submitOrderBtn = document.getElementById("submitOrderBtn");
   const toast = document.getElementById("toast");
 
-  function init() {
+  async function init() {
     const cart = WujiStore.getCart();
     if (!cart || cart.length === 0) {
       alert("购物车为空，请先挑选餐品");
       window.location.href = "index.html";
       return;
+    }
+
+    // 接了后端就必须是登录用户；直接敲 URL 也会被送回登录页
+    if (window.WujiApi && WujiApi.enabled()) {
+      const session = await WujiApi.session().catch(() => null);
+      if (!session) {
+        location.href = "login.html?next=checkout.html";
+        return;
+      }
     }
 
     renderOrderItems(cart);
@@ -165,7 +174,7 @@
     });
 
     // 提交订单（无需联系人信息，直接进入扫码支付）
-    submitOrderBtn.addEventListener("click", () => {
+    submitOrderBtn.addEventListener("click", async () => {
       const pickupTime = getFinalPickupTime();
       const note = orderNoteInput.value.trim();
       const cart = WujiStore.getCart();
@@ -175,21 +184,33 @@
         return;
       }
 
-      try {
-        submitOrderBtn.disabled = true;
-        submitOrderBtn.textContent = "正在提交订单...";
+      const backendOn = Boolean(window.WujiApi && WujiApi.enabled());
+      submitOrderBtn.disabled = true;
+      submitOrderBtn.textContent = "正在提交订单...";
 
-        const order = WujiStore.createOrder({
-          diningType: selectedDiningType,
-          pickupTime,
-          note,
-          cartItems: cart
-        });
+      try {
+        let order;
+        if (backendOn) {
+          // 金额由数据库按当前商品价格重算，客户端只报商品与数量
+          order = await WujiApi.submitOrder({
+            items: cart.map((i) => ({
+              product_id: i.productId, is_raw: i.isRaw, quantity: i.quantity, options: i.options
+            })),
+            diningType: selectedDiningType,
+            pickupTime,
+            note
+          });
+          WujiStore.clearCart();
+        } else {
+          order = WujiStore.createOrder({
+            diningType: selectedDiningType, pickupTime, note, cartItems: cart
+          });
+        }
 
         // 提交成功，直接跳转扫码支付与订单确认页
         window.location.href = `pay.html?orderId=${encodeURIComponent(order.id)}`;
       } catch (err) {
-        alert("提交订单失败：" + err.message);
+        alert("提交订单失败：" + (err?.message || err));
         submitOrderBtn.disabled = false;
         submitOrderBtn.textContent = "提交订单，前往扫码支付";
       }

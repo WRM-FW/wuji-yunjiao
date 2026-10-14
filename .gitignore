@@ -17,6 +17,12 @@ node_modules/
 .wrangler-dev/
 dist/
 
+# Supabase CLI 本地状态与密钥（.env 里可能有 service_role key，绝不入库）
+supabase/.branches/
+supabase/.temp/
+.env
+.env.*
+
 # 编辑器 / 系统
 .DS_Store
 Thumbs.db
