@@ -189,9 +189,11 @@
     async submitOrder({ items, diningType, pickupTime, note }) {
       const c = sb();
       if (!c) throw new Error("后端未配置");
+      // 页面侧（camelCase）与直连调用（snake_case）两种写法都接受，
+      // 之前只认 productId 导致 checkout 传来的 product_id 被映射成 undefined
       const payload = (items || []).map((i) => ({
-        product_id: i.productId,
-        is_raw: Boolean(i.isRaw),
+        product_id: i.product_id || i.productId,
+        is_raw: i.is_raw ?? i.isRaw ?? false,
         quantity: Number(i.quantity),
         options: i.options || ""
       }));

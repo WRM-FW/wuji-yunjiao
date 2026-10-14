@@ -6,8 +6,8 @@
  * service_role key 绝对不能出现在这个文件或任何前端代码里。
  */
 window.WUJI_CONFIG = {
-  supabaseUrl: "REPLACE_WITH_PROJECT_URL",
-  supabaseAnonKey: "REPLACE_WITH_ANON_KEY",
+  supabaseUrl: "https://mqehgoavvthwxdwbelvc.supabase.co",
+  supabaseAnonKey: "sb_publishable_ilvKtrSUmQ_6kuK6xtqZuA_ZFxE6zHI",
 
   // 手机号注册时映射成虚拟邮箱的内部域名（不发邮件，仅作 auth.users 的账号标识）
   phoneEmailDomain: "@phone.wuji.app",

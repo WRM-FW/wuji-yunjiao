@@ -6,29 +6,36 @@
 
 ## 一、系统定位与架构原则
 
-1. **纯前端架构**
-   - 网站仅依赖标准前端能力（HTML5 / CSS3 / JavaScript ES6+ / LocalStorage），无需 Node.js 后端、数据库或第三方 API 服务。
-   - 彻底移除商家后台管理模块（`/admin.html`）及相关服务端接口，避免引入不必要的管理负担和运维成本。
-2. **纯前端架构的能力限制说明**
-   - **支付验证边界**：页面展示的学校统一收款二维码仅供顾客扫码转账，前端页面**无法感知银行或第三方支付的真实到账状态**，亦不会进行虚假自动支付验证。
-   - **订单确认边界**：顾客在前端点击提交生成的订单，仅保存在当前浏览器的本地存储中并用于生成截图凭证，**不代表已被商家后台云端自动接收**；订单的真实确认与出餐排单完全依赖顾客按照指引将截图发送至订餐群后，由档口工作人员人工核验。
+1. **静态前端 + Supabase 后端（v2.1 起）**
+   - 页面仍是零构建的静态站（HTML5 / CSS3 / ES6+），部署在 GitHub Pages；账号、商品、订单与取餐码放在 Supabase（免费档），浏览器只持有可公开的 publishable key。
+   - 没有自建 Node 服务、没有容器、没有自建后台进程：权限、计价与状态流转全部下沉到数据库的 RLS 与 `security definer` 函数。
+   - 未配置后端时自动退回 v2.0.0 的纯前端形态（本地菜单 + 本地订单），便于离线开发与回退。
+2. **能力边界（两种形态都成立）**
+   - **支付验证边界**：页面展示的学校统一收款二维码仅供顾客扫码转账，系统**无法感知银行或第三方支付的真实到账状态**，不做任何"已自动校验付款"的暗示。
+   - **订单确认边界**：接入后端后，订单会真实落库并被商家端看到、分配取餐码；但**付款是否到账仍需档口在订餐群里核对含时间的付款截图**，退款也一律由档口在群里办理，系统不会自动退款。
 
 ---
 
 ## 二、功能与交互流程
 
 ```text
-[选餐首页 index.html]
+[登录 / 注册 login.html]   手机号或邮箱 + 密码，注册即用，无短信与邮件验证
        │
-       ▼ （纯文字菜品浏览、规格定制：熟食/生饺、辣度、葱花香菜、加购）
-[订单结算 checkout.html]
+       ▼
+[选餐首页 index.html]      菜单来自数据库；未登录可浏览，下单需登录
+       │                   熟食按份 / 生饺按斤（0.1 斤精度）
+       ▼
+[订单结算 checkout.html]   堂食或自取、自由选择/输入出餐时间、填写备注，无联系人信息
        │
-       ▼ （选择堂食/自取、自由选择/输入出餐时间、填写备注，无联系人信息）
-[扫码支付与凭证页 pay.html]
+       ▼  submit_order()：服务端按当前商品价格重算金额并落库
+[扫码支付与凭证页 pay.html] 取餐码横幅：等待分配 → 商家分配后自动出现
        │
-       ▼ （展示核心四要素、金额、中银收款码，用户截图发送至订餐群）
-[微信订餐群人工核验出餐]
+       ▼  出餐后凭「取餐码 + 含时间的付款截图」取餐
+[商家端 staff.html]        订单卡片 → 手动分配 001–300 号码 → 标记已取餐即释放号码
 ```
+
+未配置后端（`js/config.js` 里 URL 与 key 还是占位值）时，站点自动退回 v2.0.0 的纯前端形态：
+本地菜单 + 本地订单 + 截图发群人工核验，登录与商家端入口隐藏。
 
 ### 1. 计价规则：熟食按份、生饺按斤
 - **熟食现煮**按「份」卖，数量为整数份，单价即 `priceCooked` 元/份。
@@ -176,18 +183,36 @@ Supabase 的手机密码登录是企业版功能、手机注册强制短信验�
 Email Confirmation（`SITE_URL` 可留空），注册后即可直接登录。
 
 ### 初始化步骤
-```bash
-supabase login                       # 或 export SUPABASE_ACCESS_TOKEN=...
-supabase projects create wuji-yunjiao
-supabase link --project-ref <ref>
-supabase db push                     # 按 supabase/migrations/ 顺序建表、策略与函数
-supabase users create --email admin@wuji.app --password '<随机密码>' \
-  --email-confirm --role authenticated   # 初始管理员
-# 再用 service_role 或 Studio 把该账号的 profiles.role 改成 admin
-node _tools/supabase_acceptance.mjs     # 端到端验收
+本项目已接好的后端：Project URL `https://mqehgoavvthwxdwbelvc.supabase.co`（免费档），
+URL 与 publishable key 已写入 `js/config.js`（两者都是可公开的浏览器端值）。
+
+在仓库根目录准备一个 **不入库** 的 `.env`（`.gitignore` 已忽略），供 CLI 与脚本读取：
 ```
-把 `supabase projects api-keys` 拿到的 anon key 与项目 URL 填进 `js/config.js` 即可上线；
-未填时站点自动退回 v2.0.0 的纯前端形态（本地菜单 + 本地订单），不会白屏。
+SUPABASE_DB_PASSWORD=<项目数据库密码>
+WUJI_ADMIN_EMAIL=<管理员邮箱>
+WUJI_ADMIN_PASSWORD=<管理员登录密码>
+```
+然后：
+```bash
+supabase login                                  # 令牌由本人粘贴，不进命令行历史
+supabase link --project-ref mqehgoavvthwxdwbelvc
+supabase db push                                # 按 supabase/migrations/ 顺序建表、策略与函数
+supabase config push                            # 关闭邮箱验证（[auth.email] enable_confirmations=false）
+node ../_tools/wuji_bootstrap.mjs               # 用 .env 里的账号建初始管理员
+# 再把它提为管理员：把 SQL 写进一个临时文件（Windows 下没有进程替换）
+#   update public.profiles set role='admin' where contact_email='<管理员邮箱>';
+supabase db query --linked --file promote.sql
+node ../_tools/supabase_acceptance.mjs          # 后端验收
+node ../_tools/cdp_e2e_backend.mjs              # 前端页面 × 后端端到端
+node ../_tools/cdp_layout_check.mjs             # 多视口布局与交互
+```
+`supabase/config.toml` 里 `site_url` 指向 Pages 线上地址；改认证参数走
+`supabase config pull` → 编辑 → `supabase config push`，不要手改控制台后再忘记同步回仓库。
+
+注意：`wuji_guard_profile_update()` 触发器对改 `role` 一律拦截，只放行
+`session_user in ('postgres','supabase_admin')` 的直连通道（控制台 SQL Editor / `supabase db query`），
+这是初始管理员引导与运维救火的唯一入口；浏览器经 PostgREST 进来时 `session_user` 是
+`authenticator`，永远拿不到这个放行。
 
 ### 商家端刷新策略
 `js/api.js` 的 `watchOrders()` 以 Realtime `postgres_changes`（orders / order_items）为主，

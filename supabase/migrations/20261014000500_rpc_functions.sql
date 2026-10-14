@@ -48,14 +48,16 @@ security definer
 set search_path = public
 as $$
   select to_jsonb(o) || jsonb_build_object(
-    'items', coalesce((
-      select jsonb_agg(jsonb_build_object(
-               'id', i.id, 'product_id', i.product_id, 'is_raw', i.is_raw,
-               'name', i.name, 'spec_name', i.spec_name, 'options', i.options,
-               'unit', i.unit, 'unit_price', i.unit_price,
-               'quantity', i.quantity, 'subtotal', i.subtotal)
-             order by i.sort_index),
-           '[]'::jsonb))
+    'items', coalesce(
+      (select jsonb_agg(jsonb_build_object(
+                 'id', i.id, 'product_id', i.product_id, 'is_raw', i.is_raw,
+                 'name', i.name, 'spec_name', i.spec_name, 'options', i.options,
+                 'unit', i.unit, 'unit_price', i.unit_price,
+                 'quantity', i.quantity, 'subtotal', i.subtotal)
+               order by i.sort_index)
+         from public.order_items i
+        where i.order_id = o.id),
+      '[]'::jsonb)
   )
   from public.orders o
   where o.id = p_order_id

@@ -93,7 +93,18 @@
       return;
     }
     if (!order) {
-      heroTimeVal.textContent = "订单不存在或无权查看";
+      // 不留静态占位内容误导顾客：明确告知读不到这单
+      orderIdText.textContent = orderId || "缺少订单号";
+      orderTimeText.textContent = "";
+      if (pickupCodeBanner) {
+        pickupCodeBanner.style.display = "flex";
+        pickupCodeBanner.dataset.state = "cancelled";
+        pickupCodeLabel.textContent = "订单状态";
+        pickupCodeValue.textContent = "读不到该订单";
+        pickupCodeHint.textContent = "可能链接不完整，或该订单不属于当前登录账号";
+      }
+      receiptItemsTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94A3B8; padding:14px;">
+        没有可显示的明细 · <a href="my-orders.html" style="color:var(--primary);">去我的订单</a></td></tr>`;
       return;
     }
 

@@ -317,6 +317,13 @@
     }
 
     /* 取餐码横幅 */
+    /* UUID 单号在 320~390px 宽下不撑破抬头：小一号并限制宽度 */
+    #orderIdText {
+      font-size: 9.5px;
+      line-height: 1.35;
+      word-break: break-all;
+      max-width: 150px;
+    }
     .pickup-code-banner {
       display: flex;
       align-items: center;
